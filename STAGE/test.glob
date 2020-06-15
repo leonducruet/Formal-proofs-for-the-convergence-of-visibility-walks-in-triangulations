@@ -1,0 +1,21 @@
+DIGEST 2996e6b6dd585d3489106d857678c657
+Ftest
+R29:41 mathcomp.ssreflect.all_ssreflect <> <> lib
+prf 135:143 <> foldl_cat
+R157:157 test <> R var
+R169:171 mathcomp.ssreflect.seq <> seq syndef
+R173:173 test <> T var
+R201:203 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R180:184 mathcomp.ssreflect.seq <> foldl def
+R194:197 mathcomp.ssreflect.seq <> ::seq_scope:x_'++'_x not
+R192:193 test <> s1 var
+R198:199 test <> s2 var
+R188:189 test <> z0 var
+R186:186 test <> f var
+R204:208 mathcomp.ssreflect.seq <> foldl def
+R228:229 test <> s2 var
+R213:217 mathcomp.ssreflect.seq <> foldl def
+R224:225 test <> s1 var
+R221:222 test <> z0 var
+R219:219 test <> f var
+R210:210 test <> f var

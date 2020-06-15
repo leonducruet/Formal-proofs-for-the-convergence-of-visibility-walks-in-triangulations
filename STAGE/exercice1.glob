@@ -1,0 +1,91 @@
+DIGEST 8fb3f3bf5e25662ac1f912a3493fbae6
+Fexercice1
+R29:41 mathcomp.ssreflect.all_ssreflect <> <> lib
+ind 137:142 <> option
+constr 152:155 <> Some
+constr 167:170 <> None
+R162:162 exercice1 <> A var
+R164:164 exercice1 <> option ind
+R164:164 exercice1 <> A var
+R171:171 exercice1 <> option ind
+R171:171 exercice1 <> A var
+R183:186 exercice1 <> Some constr
+R183:186 exercice1 <> Some constr
+R203:206 exercice1 <> None constr
+R203:206 exercice1 <> None constr
+def 225:231 <> default
+R243:243 exercice1 <> A var
+R251:256 exercice1 <> option ind
+R258:258 exercice1 <> A var
+R267:267 exercice1 <> s var
+R272:275 exercice1 <> Some constr
+R291:291 exercice1 <> a var
+R307:313 exercice1 <> default def
+R317:320 exercice1 <> None constr
+R336:342 exercice1 <> default def
+R347:350 exercice1 <> Some constr
+def 368:371 <> negb
+R381:383 Coq.ssr.ssreflect <> ::boolean_if_scope:'if'_x_'then'_x_'else'_x not
+R385:390 Coq.ssr.ssreflect <> ::boolean_if_scope:'if'_x_'then'_x_'else'_x not
+R396:401 Coq.ssr.ssreflect <> ::boolean_if_scope:'if'_x_'then'_x_'else'_x not
+R384:384 exercice1 <> b var
+R391:395 Coq.Init.Datatypes <> false constr
+R402:405 Coq.Init.Datatypes <> true constr
+R429:432 exercice1 <> negb def
+not 418:418 <> :::'~~'_x
+R452:454 exercice1 <> :::'~~'_x not
+R455:458 Coq.Init.Datatypes <> true constr
+R474:476 exercice1 <> :::'~~'_x not
+R477:481 Coq.Init.Datatypes <> false constr
+def 494:497 <> iter
+R520:520 exercice1 <> T var
+R532:532 exercice1 <> n var
+R538:540 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'.+1' not
+R547:548 exercice1 <> op var
+R551:554 exercice1 <> iter def
+R561:561 exercice1 <> x var
+R558:559 exercice1 <> op var
+R569:569 exercice1 <> x var
+R582:585 exercice1 <> iter def
+R582:585 exercice1 <> iter def
+def 604:607 <> addn
+R618:621 exercice1 <> iter def
+R642:642 exercice1 <> m var
+R636:638 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'+'_x not
+R635:635 exercice1 <> x var
+R623:623 exercice1 <> n var
+R659:662 exercice1 <> addn def
+def 681:684 <> muln
+R695:698 exercice1 <> iter def
+R712:715 exercice1 <> addn def
+R719:719 exercice1 <> m var
+R717:717 exercice1 <> x var
+R700:700 exercice1 <> n var
+R739:742 exercice1 <> muln def
+def 759:766 <> muln_rec
+R783:783 exercice1 <> n var
+R795:797 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'.+1' not
+R802:805 exercice1 <> addn def
+R822:822 exercice1 <> m var
+R808:815 exercice1 <> muln_rec def
+R819:819 exercice1 <> m var
+R856:863 exercice1 <> muln_rec def
+def 882:889 <> add2list
+R898:900 mathcomp.ssreflect.seq <> map def
+R919:919 exercice1 <> s var
+R913:915 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'+'_x not
+R912:912 exercice1 <> x var
+R936:943 exercice1 <> add2list def
+R945:948 mathcomp.ssreflect.seq <> ::seq_scope:'['_'::'_x_';'_x_';'_'..'_';'_x_']' not
+R950:951 mathcomp.ssreflect.seq <> ::seq_scope:'['_'::'_x_';'_x_';'_'..'_';'_x_']' not
+R953:954 mathcomp.ssreflect.seq <> ::seq_scope:'['_'::'_x_';'_x_';'_'..'_';'_x_']' not
+R956:956 mathcomp.ssreflect.seq <> ::seq_scope:'['_'::'_x_';'_x_';'_'..'_';'_x_']' not
+def 971:974 <> odds
+R983:986 exercice1 <> iter def
+R1023:1026 mathcomp.ssreflect.seq <> ::seq_scope:'['_'::'_']' not
+R1003:1007 mathcomp.ssreflect.seq <> ::seq_scope:x_'::'_x not
+R1020:1020 mathcomp.ssreflect.seq <> ::seq_scope:x_'::'_x not
+R1008:1015 exercice1 <> add2list def
+R1017:1019 exercice1 <> seq var
+R988:988 exercice1 <> n var
+R1043:1046 exercice1 <> odds def

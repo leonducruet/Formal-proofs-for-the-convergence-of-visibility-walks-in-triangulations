@@ -1,0 +1,139 @@
+DIGEST 3a233a5b2975d627cbe8b6a5c9bece9d
+Flesson1
+R29:41 mathcomp.ssreflect.all_ssreflect <> <> lib
+R626:626 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'.+2' not
+R632:635 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'.+2' not
+R628:630 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'+'_x not
+R627:627 lesson1 <> x var
+R631:631 lesson1 <> x var
+R662:662 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'.+2' not
+R668:671 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'.+2' not
+R664:666 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'+'_x not
+R663:663 lesson1 <> x var
+R667:667 lesson1 <> x var
+def 689:692 <> pred
+R699:701 Coq.Init.Datatypes <> nat ind
+R712:712 lesson1 <> n var
+R718:720 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'.+1' not
+R751:754 lesson1 <> pred def
+def 769:772 <> addn
+R787:787 lesson1 <> n var
+R793:795 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'.+1' not
+R802:802 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'.+1' not
+R811:814 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'.+1' not
+R803:806 lesson1 <> addn def
+R810:810 lesson1 <> m var
+R821:821 lesson1 <> m var
+R838:841 lesson1 <> addn def
+not 831:831 <> :::x_'+'_x
+R858:860 lesson1 <> :::x_'+'_x not
+R871:874 lesson1 <> addn def
+def 887:889 <> eqn
+R909:909 lesson1 <> m var
+R906:906 lesson1 <> n var
+R928:931 Coq.Init.Datatypes <> true constr
+R938:940 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'.+1' not
+R944:946 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'.+1' not
+R951:953 lesson1 <> eqn def
+R971:975 Coq.Init.Datatypes <> false constr
+R999:1001 lesson1 <> eqn def
+not 991:991 <> :::x_'=='_x
+R1018:1021 lesson1 <> :::x_'=='_x not
+def 1035:1038 <> subn
+R1046:1048 Coq.Init.Datatypes <> nat ind
+R1064:1064 lesson1 <> n var
+R1061:1061 lesson1 <> m var
+R1076:1078 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'.+1' not
+R1082:1084 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'.+1' not
+R1089:1092 lesson1 <> subn def
+R1109:1109 lesson1 <> m var
+R1132:1135 lesson1 <> subn def
+not 1125:1125 <> :::x_'-'_x
+R1153:1155 lesson1 <> :::x_'-'_x not
+R1173:1175 lesson1 <> :::x_'-'_x not
+def 1191:1193 <> leq
+R1207:1210 lesson1 <> :::x_'=='_x not
+R1203:1205 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'-'_x not
+R1202:1202 lesson1 <> m var
+R1206:1206 lesson1 <> n var
+R1229:1231 lesson1 <> leq def
+not 1221:1221 <> :::x_'<='_x
+R1249:1252 lesson1 <> :::x_'<='_x not
+R1263:1265 Coq.Init.Datatypes <> nil constr
+R1274:1277 Coq.Init.Datatypes <> cons constr
+R1281:1284 mathcomp.ssreflect.seq <> ::seq_scope:'['_'::'_x_';'_x_';'_'..'_';'_x_']' not
+R1286:1287 mathcomp.ssreflect.seq <> ::seq_scope:'['_'::'_x_';'_x_';'_'..'_';'_x_']' not
+R1289:1290 mathcomp.ssreflect.seq <> ::seq_scope:'['_'::'_x_';'_x_';'_'..'_';'_x_']' not
+R1293:1293 mathcomp.ssreflect.seq <> ::seq_scope:'['_'::'_x_';'_x_';'_'..'_';'_x_']' not
+def 1306:1309 <> size
+R1318:1320 mathcomp.ssreflect.seq <> seq syndef
+R1322:1322 lesson1 <> A var
+R1334:1334 lesson1 <> s var
+R1340:1343 mathcomp.ssreflect.seq <> ::seq_scope:x_'::'_x not
+R1352:1352 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'.+1' not
+R1362:1365 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'.+1' not
+R1353:1356 lesson1 <> size def
+R1358:1358 lesson1 <> A var
+R1389:1392 lesson1 <> size def
+R1398:1401 mathcomp.ssreflect.seq <> ::seq_scope:'['_'::'_x_';'_x_';'_'..'_';'_x_']' not
+R1403:1404 mathcomp.ssreflect.seq <> ::seq_scope:'['_'::'_x_';'_x_';'_'..'_';'_x_']' not
+R1406:1407 mathcomp.ssreflect.seq <> ::seq_scope:'['_'::'_x_';'_x_';'_'..'_';'_x_']' not
+R1410:1410 mathcomp.ssreflect.seq <> ::seq_scope:'['_'::'_x_';'_x_';'_'..'_';'_x_']' not
+R1394:1396 Coq.Init.Datatypes <> nat ind
+sec 1422:1428 <> symbols
+var 1441:1441 symbols v
+R1445:1447 Coq.Init.Datatypes <> nat ind
+R1464:1467 lesson1 <> pred def
+R1470:1472 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'.+1' not
+R1469:1469 lesson1 <> symbols.v var
+R1488:1491 lesson1 <> pred def
+R1493:1493 lesson1 <> symbols.v var
+var 1506:1506 symbols f
+R1513:1516 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1520:1523 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1524:1526 Coq.Init.Datatypes <> nat ind
+R1517:1519 Coq.Init.Datatypes <> nat ind
+R1510:1512 Coq.Init.Datatypes <> nat ind
+R1543:1547 mathcomp.ssreflect.seq <> foldr def
+R1553:1556 mathcomp.ssreflect.seq <> ::seq_scope:'['_'::'_x_';'_x_';'_'..'_';'_x_']' not
+R1558:1559 mathcomp.ssreflect.seq <> ::seq_scope:'['_'::'_x_';'_x_';'_'..'_';'_x_']' not
+R1561:1562 mathcomp.ssreflect.seq <> ::seq_scope:'['_'::'_x_';'_x_';'_'..'_';'_x_']' not
+R1549:1549 lesson1 <> symbols.f var
+R1579:1583 mathcomp.ssreflect.seq <> foldr def
+R1592:1595 mathcomp.ssreflect.seq <> ::seq_scope:'['_'::'_x_';'_x_';'_'..'_';'_x_']' not
+R1597:1598 mathcomp.ssreflect.seq <> ::seq_scope:'['_'::'_x_';'_x_';'_'..'_';'_x_']' not
+R1600:1600 mathcomp.ssreflect.seq <> ::seq_scope:'['_'::'_x_';'_x_';'_'..'_';'_x_']' not
+R1585:1588 lesson1 <> addn def
+R1608:1614 lesson1 symbols <> sec
+def 1627:1630 <> iota
+R1642:1642 lesson1 <> n var
+R1648:1650 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'.+1' not
+R1658:1661 mathcomp.ssreflect.seq <> ::seq_scope:x_'::'_x not
+R1657:1657 lesson1 <> m var
+R1662:1665 lesson1 <> iota def
+R1668:1670 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'.+1' not
+R1667:1667 lesson1 <> m var
+R1679:1682 mathcomp.ssreflect.seq <> ::seq_scope:'['_'::'_']' not
+R1699:1702 lesson1 <> iota def
+R1750:1754 mathcomp.ssreflect.seq <> foldr def
+R1778:1781 lesson1 <> iota def
+R1787:1787 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'-'_x not
+R1769:1771 lesson1 <> :::x_'+'_x not
+R1772:1772 lesson1 <> a var
+not 1719:1719 <> :::'\sum_'_'('_x_'<='_x_'<'_x_')'_x
+R1801:1806 lesson1 <> :::'\sum_'_'('_x_'<='_x_'<'_x_')'_x not
+R1808:1811 lesson1 <> :::'\sum_'_'('_x_'<='_x_'<'_x_')'_x not
+R1813:1815 lesson1 <> :::'\sum_'_'('_x_'<='_x_'<'_x_')'_x not
+R1817:1819 lesson1 <> :::'\sum_'_'('_x_'<='_x_'<'_x_')'_x not
+R1829:1829 lesson1 <> :::'\sum_'_'('_x_'<='_x_'<'_x_')'_x not
+R1825:1827 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'-'_x not
+R1821:1823 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'*'_x not
+R1820:1820 lesson1 <> x var
+R1845:1850 lesson1 <> :::'\sum_'_'('_x_'<='_x_'<'_x_')'_x not
+R1852:1855 lesson1 <> :::'\sum_'_'('_x_'<='_x_'<'_x_')'_x not
+R1857:1859 lesson1 <> :::'\sum_'_'('_x_'<='_x_'<'_x_')'_x not
+R1861:1863 lesson1 <> :::'\sum_'_'('_x_'<='_x_'<'_x_')'_x not
+R1873:1873 lesson1 <> :::'\sum_'_'('_x_'<='_x_'<'_x_')'_x not
+R1869:1871 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'-'_x not
+R1865:1867 mathcomp.ssreflect.ssrnat <> ::nat_scope:x_'*'_x not
+R1864:1864 lesson1 <> x var

@@ -1,0 +1,31 @@
+From mathcomp Require Import all_ssreflect.
+
+Module  easy.
+
+Implicit Type p q r : bool.
+Implicit Type m n a b c : nat.
+
+Lemma bool_gimmics1 a : a != a.-1 -> a != 0.
+apply: contra.
+move => /eqP a_eq_0.
+by rewrite a_eq_0.
+Qed.
+
+Lemma view_gimmics1 p a b : p -> (p ==> (a == b.*2)) -> a./2 = b.
+Proof.
+move => -> /eqP ->.
+by rewrite doubleK.
+Qed.
+
+Lemma maxn_idPl m n : reflect (maxn m n = m) (m >= n).
+Proof.
+apply: (iffP idP);
+rewrite /maxn.
+  by case: leqP.
+move => <-.
+by case: leqP.
+Qed.
+
+Lemma maxn_idPl_bis m n : reflect (maxn m n = m) (m >= n).
+
+
