@@ -8,6 +8,8 @@ Section parameters.
   Variable E : finType. 
 
   Variable T : finType.
+  
+  Variable edge_in_triangle : E -> T -> bool.
 
   Definition triangulation := {set T}.
   
@@ -17,15 +19,28 @@ Section parameters.
 
   Variable target_point : P.
 
-  Section hypothesis.
+  Section walk_hypothesis.
 
     Hypothesis tr_is_Delaunay : is_Delaunay tr.
 
-    Variable separating_edge : T -> option E.
-
     Variable opposite_edge : E -> E.
+    
+    Hypothesis involution_opposite_edge : 
+      forall (e : E), opposite_edge (opposite_edge e) = e.
+
+    Variable separating_edge : T -> option E.
+    
+    Hypothesis separating_edge_is_in_triangle : 
+      forall (e : E) (t : T),
+        separating_edge t = Some e -> 
+          edge_in_triangle e t.
 
     Variable find_triangle_of_edge : E -> option T.
+
+    Hypothesis edge_is_in_triangle_of_edge :
+      forall (e : E) (t : T),
+        find_triangle_of_edge e = Some t -> 
+          edge_in_triangle e t.
 
     Variable walk_lt : T -> T -> Prop.
 
@@ -55,8 +70,17 @@ Section parameters.
                  walk new_triangle;
               | exist _ None eq2 := inr (opposite_edge edge)};
          | exist _ None eq1 := inl (current_triangle)}.
+
+    Lemma walk_result_edge :
+      forall (e : E) (t : T),
+      walk t = inr e -> (exists (t1 : T), edge_in_triangle (opposite_edge e) t1) /\
+        (forall (t2 : T), ~~ edge_in_triangle e t2).
+    Proof.
+    move => e t h.
+    Abort.
+
     
-    End hypothesis.
+    End walk_hypothesis.
 
 End parameters.
 
