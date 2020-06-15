@@ -19,7 +19,7 @@ Section parameters.
 
   Variable target_point : P.
 
-  Section walk_hypothesis.
+  Section walk_parameters.
 
     Hypothesis tr_is_Delaunay : is_Delaunay tr.
 
@@ -76,11 +76,13 @@ Section parameters.
       walk t = inr e -> (exists (t1 : T), edge_in_triangle (opposite_edge e) t1) /\
         (forall (t2 : T), ~~ edge_in_triangle e t2).
     Proof.
-    move => e t h.
+    move => e t h; split.
+      exists t.
+      funelim (walk t).
     Abort.
 
     
-    End walk_hypothesis.
+    End walk_parameters.
 
 End parameters.
 
