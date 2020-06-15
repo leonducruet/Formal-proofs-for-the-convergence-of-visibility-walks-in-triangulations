@@ -1,54 +1,52 @@
-From mathcomp Require Import all_ssreflect all_algebra.
+From mathcomp Require Import all_ssreflect.
 From Equations Require Import Equations.
 
 Section parameters.
-  
-  Variable R : realDomainType.
 
   Variable P : finType.
   
-  Variable coord : P -> R ^ 2.
+  Variable E : finType. 
 
-  Definition triangulation := {set (P ^ 3)}.
+  Variable T : finType.
+
+  Definition triangulation := {set T}.
   
   Variable is_Delaunay : triangulation -> bool.
 
   Variable tr : triangulation.
 
-  Definition Delaunay_tr := is_Delaunay tr.
-
   Variable target_point : P.
 
   Section hypothesis.
-    
-    Hypothesis tr_is_Delaunay : reflect True Delaunay_tr.
 
-    Variable separating_edge : P ^ 3 -> option (P ^ 2).
+    Hypothesis tr_is_Delaunay : is_Delaunay tr.
 
-    Variable opposite_edge : P ^ 2 -> P ^ 2.
+    Variable separating_edge : T -> option E.
 
-    Variable find_triangle_of_edge : P ^ 2 -> option (P ^ 3).
+    Variable opposite_edge : E -> E.
 
-    Variable walk_lt : P ^ 3 -> P ^ 3 -> Prop.
+    Variable find_triangle_of_edge : E -> option T.
+
+    Variable walk_lt : T -> T -> Prop.
 
     Hypothesis walk_lt_wf : WellFounded walk_lt.
 
     Hypothesis  decrease_condition :
-      forall e t t',
-        separating_edge t = some e -> 
-          find_triangle_of_edge (opposite_edge e) = some t' ->
+      forall (e : E) (t t' : T),
+        separating_edge t = Some e -> 
+          find_triangle_of_edge (opposite_edge e) = Some t' ->
             walk_lt t' t.
 
-    Definition separating_inspect (t : P ^ 3) :
-      {e' : option (P ^ 2) | separating_edge t = e'} :=
+    Definition separating_inspect (t : T) :
+      {e' : option E | separating_edge t = e'} :=
      exist _ (separating_edge t) erefl.
 
-    Definition find_triangle_inspect (e : P ^ 2) :
-      {t' : option (P ^ 3) | find_triangle_of_edge e = t'} :=
+    Definition find_triangle_inspect (e : E) :
+      {t' : option T | find_triangle_of_edge e = t'} :=
       exist _ (find_triangle_of_edge e) erefl.
 
-    Equations walk (current_triangle : P ^ 3) 
-       : (P ^ 3) + (P ^ 2) by wf (current_triangle) walk_lt :=
+    Equations walk (current_triangle : T) 
+       : T + E by wf (current_triangle) walk_lt :=
     walk current_triangle with
         separating_inspect current_triangle => { 
          | exist _ (Some edge) eq1
@@ -61,5 +59,4 @@ Section parameters.
     End hypothesis.
 
 End parameters.
-
 
