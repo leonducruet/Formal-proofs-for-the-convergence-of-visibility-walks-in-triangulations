@@ -9,7 +9,7 @@ Section parameters.
 
   Variable T : finType.
   
-  Variable edge_in_triangle : E -> T -> bool.
+  Variable in_triangle : E -> T -> bool.
 
   Definition triangulation := {set T}.
   
@@ -22,25 +22,25 @@ Section parameters.
   Section walk_parameters.
 
     Hypothesis tr_is_Delaunay : is_Delaunay tr.
-
-    Variable opposite_edge : E -> E.
     
+    Variable opposite_edge : E -> E.
+
     Hypothesis involution_opposite_edge : 
       forall (e : E), opposite_edge (opposite_edge e) = e.
 
     Variable separating_edge : T -> option E.
     
-    Hypothesis separating_edge_is_in_triangle : 
+    Hypothesis separating_edge_in_triangle : 
       forall (e : E) (t : T),
         separating_edge t = Some e -> 
-          edge_in_triangle e t.
+          in_triangle e t.
 
     Variable find_triangle_of_edge : E -> option T.
 
-    Hypothesis edge_is_in_triangle_of_edge :
+    Hypothesis edge_in_triangle_of_edge :
       forall (e : E) (t : T),
-        find_triangle_of_edge e = Some t -> 
-          edge_in_triangle e t.
+        find_triangle_of_edge e = Some t <->
+          in_triangle e t.
 
     Variable walk_lt : T -> T -> Prop.
 
@@ -73,15 +73,23 @@ Section parameters.
 
     Lemma walk_result_edge :
       forall (e : E) (t : T),
-      walk t = inr e -> (exists (t1 : T), edge_in_triangle (opposite_edge e) t1) /\
-        (forall (t2 : T), ~~ edge_in_triangle e t2).
+      walk t = inr e -> (exists (t1 : T), in_triangle (opposite_edge e) t1) /\
+        (forall (t2 : T), ~~ in_triangle e t2).
     Proof.
-    move => e t h; split.
-      exists t.
-      funelim (walk t).
-    Abort.
+    move => e t h; funelim (walk t); rewrite h in Heqcall.
+        by [].
+      move: Heqcall.
+      apply: (H e1).
+    split; injection Heqcall; move => heq.
+      rewrite -heq involution_opposite_edge.
+      exists current_triangle.
+      apply: separating_edge_in_triangle e.
+    move => t2.
+    apply/negP.
+    move => /edge_in_triangle_of_edge.
+    by rewrite -heq e0.
+    Qed.
 
-    
     End walk_parameters.
 
 End parameters.
