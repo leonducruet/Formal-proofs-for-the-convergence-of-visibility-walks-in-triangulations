@@ -9,7 +9,7 @@ Section parameters.
 
   Variable T : finType.
 
-  Variable edge_in : E -> T -> Prop.
+  Variable edge_in : E -> T -> bool.
 
   Definition triangulation := {set T}.
   
@@ -31,7 +31,7 @@ Section parameters.
     Variable separating_edge : T -> option E.
     
     Definition target_in (t : T) :=
-      separating_edge t = None.
+      separating_edge t == None.
 
     Hypothesis separating_edge_in_triangle : 
       forall (e : E) (t : T),
@@ -98,6 +98,7 @@ Section parameters.
     move => t1 t2 h; funelim (walk t1); rewrite h in Heqcall.
         move: Heqcall => [heq].
         rewrite -heq /target_in.
+        apply/eqP.
         by apply: e.
       by apply: H Heqcall.
     by [].
