@@ -80,11 +80,12 @@ Section parameters.
     move => e t h; funelim (walk t); rewrite h in Heqcall.
         by [].
       move: Heqcall.
-      apply: (H e1).
-    split; injection Heqcall; move => heq.
+      by apply: (H e1).
+    move: Heqcall=> [heq].
+    split.
       rewrite -heq involution_opposite_edge.
       exists current_triangle.
-      apply: separating_edge_in_triangle e.
+      by apply: separating_edge_in_triangle e.
     move => t2.
     move => /correction_find_triangle.
     by rewrite -heq e0.
@@ -95,10 +96,10 @@ Section parameters.
       walk t1 = inl t2 -> target_in t2.
     Proof.
     move => t1 t2 h; funelim (walk t1); rewrite h in Heqcall.
-        injection Heqcall; move => heq.
+        move: Heqcall => [heq].
         rewrite -heq /target_in.
-        apply: e.
-      apply: H Heqcall.
+        by apply: e.
+      by apply: H Heqcall.
     by [].
     Qed.
 
