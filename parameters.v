@@ -8,10 +8,8 @@ Section parameters.
   Variable E : finType. 
 
   Variable T : finType.
-  
-  Variable edge_in : E -> T -> bool.
-  
-  Variable point_in : P -> T -> bool.
+
+  Variable edge_in : E -> T -> Prop.
 
   Definition triangulation := {set T}.
   
@@ -32,17 +30,18 @@ Section parameters.
 
     Variable separating_edge : T -> option E.
     
+    Definition target_in (t : T) :=
+      separating_edge t = None.
+
     Hypothesis separating_edge_in_triangle : 
       forall (e : E) (t : T),
-        separating_edge t = Some e -> 
-          edge_in e t.
+        separating_edge t = Some e -> edge_in e t.
 
     Variable find_triangle_of_edge : E -> option T.
 
-    Hypothesis edge_in_triangle_of_edge :
+    Hypothesis correction_find_triangle :
       forall (e : E) (t : T),
-        find_triangle_of_edge e = Some t <->
-          edge_in e t.
+      find_triangle_of_edge e = Some t <-> edge_in e t.
 
     Variable walk_lt : T -> T -> Prop.
 
@@ -76,7 +75,7 @@ Section parameters.
     Lemma walk_result_edge :
       forall (e : E) (t : T),
       walk t = inr e -> (exists (t1 : T), edge_in (opposite_edge e) t1) /\
-        (forall (t2 : T), ~~ edge_in e t2).
+        (forall (t2 : T), ~ edge_in e t2).
     Proof.
     move => e t h; funelim (walk t); rewrite h in Heqcall.
         by [].
@@ -87,14 +86,21 @@ Section parameters.
       exists current_triangle.
       apply: separating_edge_in_triangle e.
     move => t2.
-    apply/negP.
-    move => /edge_in_triangle_of_edge.
+    move => /correction_find_triangle.
     by rewrite -heq e0.
     Qed.
 
     Lemma walk_result_triangle :
       forall (t1 t2 : T),
-      walk t1 = inl t2 -> point_in target_point t2.
+      walk t1 = inl t2 -> target_in t2.
+    Proof.
+    move => t1 t2 h; funelim (walk t1); rewrite h in Heqcall.
+        injection Heqcall; move => heq.
+        rewrite -heq /target_in.
+        apply: e.
+      apply: H Heqcall.
+    by [].
+    Qed.
 
     End walk_parameters.
 
