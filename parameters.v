@@ -9,7 +9,9 @@ Section parameters.
 
   Variable T : finType.
   
-  Variable in_triangle : E -> T -> bool.
+  Variable edge_in : E -> T -> bool.
+  
+  Variable point_in : P -> T -> bool.
 
   Definition triangulation := {set T}.
   
@@ -33,14 +35,14 @@ Section parameters.
     Hypothesis separating_edge_in_triangle : 
       forall (e : E) (t : T),
         separating_edge t = Some e -> 
-          in_triangle e t.
+          edge_in e t.
 
     Variable find_triangle_of_edge : E -> option T.
 
     Hypothesis edge_in_triangle_of_edge :
       forall (e : E) (t : T),
         find_triangle_of_edge e = Some t <->
-          in_triangle e t.
+          edge_in e t.
 
     Variable walk_lt : T -> T -> Prop.
 
@@ -73,8 +75,8 @@ Section parameters.
 
     Lemma walk_result_edge :
       forall (e : E) (t : T),
-      walk t = inr e -> (exists (t1 : T), in_triangle (opposite_edge e) t1) /\
-        (forall (t2 : T), ~~ in_triangle e t2).
+      walk t = inr e -> (exists (t1 : T), edge_in (opposite_edge e) t1) /\
+        (forall (t2 : T), ~~ edge_in e t2).
     Proof.
     move => e t h; funelim (walk t); rewrite h in Heqcall.
         by [].
@@ -89,6 +91,10 @@ Section parameters.
     move => /edge_in_triangle_of_edge.
     by rewrite -heq e0.
     Qed.
+
+    Lemma walk_result_triangle :
+      forall (t1 t2 : T),
+      walk t1 = inl t2 -> point_in target_point t2.
 
     End walk_parameters.
 
