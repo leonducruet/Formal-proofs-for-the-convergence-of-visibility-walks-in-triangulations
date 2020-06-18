@@ -57,6 +57,22 @@ Hypothesis positive_measure :
 Definition walk_lt (t1 t2 : T) := 
   is_true (triangle_measure t1 < triangle_measure t2).
 
+Lemma walk_lt_trans : 
+  forall (t1 t2 t3 : T),
+  walk_lt t1 t2 -> walk_lt t2 t3 -> walk_lt t1 t3.
+Proof.
+Abort.
+
+Lemma walk_lt_anti_refl :
+  forall (t : T), ~ (walk_lt t t).
+Proof.
+Abort.
+
+Lemma walk_lt_anti_sym :
+  forall (t1 t2 : T), walk_lt t1 t2 -> walk_lt t2 t1 -> t1 = t2.
+Proof.
+Abort.
+
 Hypothesis walk_lt_wf : WellFounded walk_lt.
 
 Hypothesis  decrease_condition :
