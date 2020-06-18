@@ -16,7 +16,7 @@ Hypothesis rel_anti_refl :
   forall (t : T), ~ rel t t.
 
 Hypothesis rel_anti_sym :
-  forall (t1 t2 : T), rel t1 t2 -> ~ rel t2 t1.
+  forall (t1 t2 : T), rel t1 t2 -> rel t2 t1 -> t1 = t2.
 
 Lemma wf_rel : forall t : T, t \in set -> Acc rel t.
 Proof.
