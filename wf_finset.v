@@ -5,8 +5,6 @@ Section wfrel.
 
 Variable T : finType.
 
-Variable set : {set T}.
-
 Variable rel : T -> T -> Prop.
 
 Hypothesis rel_trans :
@@ -17,6 +15,9 @@ Hypothesis rel_anti_refl :
 
 Hypothesis rel_anti_sym :
   forall (t1 t2 : T), rel t1 t2 -> rel t2 t1 -> t1 = t2.
+
+Record subSetRel (t : T) := 
+  {set : {set T}; _ : forall t2 : T, rel t2 t <-> t2 \in set}. 
 
 Lemma wf_rel : forall t : T, t \in set -> Acc rel t.
 Proof.
