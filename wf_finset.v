@@ -16,17 +16,22 @@ Hypothesis rel_anti_refl :
 Hypothesis rel_anti_sym :
   forall (t1 t2 : T), rel t1 t2 -> rel t2 t1 -> t1 = t2.
 
-Definition subSetRel (t : T) := [set t2| rel t2 t].
+Definition rel_inv (t1 t2 : T) := rel t2 t1.
+ 
+Definition subSetRel (t : T) := finset (rel_inv t).
 
 Lemma decrease_card :
   forall (t1 t2 : T),
   t2 \in subSetRel t1 -> #|subSetRel t2| < #|subSetRel t1|.
 Proof.
-have proper t1 t2 : t2 \in subSetRel t1 -> subSetRel t2 \proper subSetRel t1.
+move => t1 t2 h.
+rewrite /subSetRel in_set /rel_inv in h.
 
+have proper : subSetRel t2 \proper subSetRel t1.
+  have subset : subSetRel t2 \subset subSetRel t1.
+    rewrite /subSetRel.
+  have diff : subSetRel t2 != subSetRel t1.
 Abort.
-Lemma wf_rel : forall t : T, t \in set -> Acc rel t.
-Proof.
-Admitted.
 
+(* Lemma properEneq A B : A \proper B = (A != B) && (A \subset B). *)
 
