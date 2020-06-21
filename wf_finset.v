@@ -65,7 +65,7 @@ destruct proper.
 apply: H0.
 Qed.
 
-Definition f : (T -> nat) := fun (t : T) => #|subSetRel t|.
+Definition f (t : T) : nat := #|subSetRel t|.
 
 Definition rel_in_nat (t1 t2 : T) :=  lt (f t1) (f t2).
 
