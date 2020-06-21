@@ -1,7 +1,9 @@
 From mathcomp Require Import all_ssreflect.
 From Equations Require Import Equations.
+Require Import Arith.
+Import Wellfounded.
 
-Section wfrel.
+Section wf_rel.
 
 Variable T : finType.
 
@@ -60,5 +62,35 @@ rewrite properEcard in proper.
 move/andP: proper.
 move => proper.
 destruct proper.
-by apply: H0.
+apply: H0.
 Qed.
+
+Definition f : (T -> nat) := fun (t : T) => #|subSetRel t|.
+
+Definition rel_in_nat (t1 t2 : T) :=  lt (f t1) (f t2).
+
+Lemma rel_to_nat : Relation_Definitions.inclusion T rel rel_in_nat.
+Proof.
+rewrite /Relation_Definitions.inclusion.
+move => t1 t2 h.
+rewrite /rel_in_nat /f.
+apply /ltP.
+apply: decrease_card.
+by rewrite in_set /rel_inv.
+Qed.
+
+Lemma wf_rel_in_nat : well_founded rel_in_nat.
+Proof.
+rewrite /rel_in_nat.
+apply: (wf_inverse_image T nat lt f).
+by apply: lt_wf.
+Qed.
+
+Lemma wf_rel : well_founded rel.
+Proof.
+apply: wf_incl.
+apply: rel_to_nat.
+apply : wf_rel_in_nat.
+Qed.
+
+End wf_rel.
