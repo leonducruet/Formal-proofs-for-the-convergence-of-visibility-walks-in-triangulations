@@ -40,10 +40,8 @@ rewrite /subSetRel in_set /rel_inv in h.
 have proper : subSetRel t2 \proper subSetRel t1.
   have subset : subSetRel t2 \subset subSetRel t1.
     apply /subsetP.
-    rewrite /subSetRel /sub_mem.
-    move => x in1.
-    rewrite in_set /rel_inv in in1.
-    rewrite in_set /rel_inv.
+    rewrite /subSetRel /sub_mem => x.
+    rewrite !in_set /rel_inv => in1.
     by apply: (rel_trans x t2 t1).
   have diff : subSetRel t2 != subSetRel t1.
     rewrite eqEsubset.
