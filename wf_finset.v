@@ -88,7 +88,7 @@ Lemma wf_rel : well_founded rel.
 Proof.
 apply: wf_incl.
 apply: rel_to_nat.
-apply : wf_rel_in_nat.
+by apply : wf_rel_in_nat.
 Qed.
 
 End wf_rel.
