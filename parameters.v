@@ -1,6 +1,10 @@
 From mathcomp Require Import all_ssreflect all_algebra.
 From Equations Require Import Equations.
 
+Add LoadPath "home/neyrand/STAGE/Work/Formal-proofs-for-the-convergence-of-visibility-walks-in-triangulations
+Require".
+Require Import wf_finset.
+
 Import GRing.Theory Num.Theory.
 
 Open Scope ring_scope.
@@ -61,17 +65,30 @@ Lemma walk_lt_trans :
   forall (t1 t2 t3 : T),
   walk_lt t1 t2 -> walk_lt t2 t3 -> walk_lt t1 t3.
 Proof.
-Abort.
+rewrite /walk_lt.
+move => t1 t2 t3.
+by apply: ltr_trans.
+Qed.
 
 Lemma walk_lt_anti_refl :
   forall (t : T), ~ (walk_lt t t).
 Proof.
-Abort.
+Admitted.
 
-Lemma walk_lt_anti_sym :
-  forall (t1 t2 : T), walk_lt t1 t2 -> walk_lt t2 t1 -> t1 = t2.
+(* Hypothesis walk_lt_trans : 
+  forall (t1 t2 t3 : T),
+  walk_lt t1 t2 -> walk_lt t2 t3 -> walk_lt t1 t3.
+
+Hypothesis walk_lt_anti_refl :
+  forall (t : T), ~ (walk_lt t t). *)
+
+(* Lemma walk_lt_wf : WellFounded walk_lt.
 Proof.
-Abort.
+rewrite /WellFounded.
+apply: wf_rel.
+apply: walk_lt_trans.
+by apply: walk_lt_anti_refl.
+Qed. *)
 
 Hypothesis walk_lt_wf : WellFounded walk_lt.
 
