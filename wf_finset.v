@@ -19,13 +19,13 @@ Hypothesis rel_anti_refl :
   forall (t1 t2 : T), rel t1 t2 -> rel t2 t1 -> t1 = t2. 
 hypothèse inutile ?*)
 
-Lemma rel_anti_sym :
+(* Lemma rel_anti_sym :
   forall (t1 t2 : T), rel t1 t2 -> ~ rel t2 t1.
 Proof.
 move => t1 t2 h h_inv.
 apply: (rel_anti_refl t2).
 by apply: (rel_trans t2 t1 t2).
-Qed.
+Qed. *)
 
 Definition rel_inv (t1 t2 : T) := rel t2 t1.
  
