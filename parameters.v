@@ -1,8 +1,7 @@
 From mathcomp Require Import all_ssreflect all_algebra.
 From Equations Require Import Equations.
 
-Add LoadPath "home/neyrand/STAGE/Work/Formal-proofs-for-the-convergence-of-visibility-walks-in-triangulations
-Require".
+Add LoadPath "home/neyrand/STAGE/Work/Formal-proofs-for-the-convergence-of-visibility-walks-in-triangulations".
 Require Import wf_finset.
 
 Import GRing.Theory Num.Theory.
