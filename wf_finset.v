@@ -15,18 +15,6 @@ Hypothesis rel_trans :
 Hypothesis rel_anti_refl :
   forall (t : T), ~ rel t t.
 
-(* Hypothesis rel_anti_sym :
-  forall (t1 t2 : T), rel t1 t2 -> rel t2 t1 -> t1 = t2. 
-hypothèse inutile ?*)
-
-(* Lemma rel_anti_sym :
-  forall (t1 t2 : T), rel t1 t2 -> ~ rel t2 t1.
-Proof.
-move => t1 t2 h h_inv.
-apply: (rel_anti_refl t2).
-by apply: (rel_trans t2 t1 t2).
-Qed. *)
-
 Definition rel_inv (t1 t2 : T) := rel t2 t1.
  
 Definition subSetRel (t : T) := finset (rel_inv t).

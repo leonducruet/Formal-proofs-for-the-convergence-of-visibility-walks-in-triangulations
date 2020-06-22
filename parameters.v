@@ -1,10 +1,9 @@
-From mathcomp Require Import all_ssreflect all_algebra.
+From mathcomp Require Import all_ssreflect all_algebra finmap.
 From Equations Require Import Equations.
 
-Add LoadPath "home/neyrand/STAGE/Work/Formal-proofs-for-the-convergence-of-visibility-walks-in-triangulations".
 Require Import wf_finset.
 
-Import GRing.Theory Num.Theory.
+Import GRing.Theory Num.Theory Order.Theory.
 
 Open Scope ring_scope.
 
@@ -57,8 +56,8 @@ Variable triangle_measure : T -> R.
 Hypothesis positive_measure :
   forall (t : T), triangle_measure t >= 0.
 
-Definition walk_lt (t1 t2 : T) := 
-  is_true (triangle_measure t1 < triangle_measure t2).
+Definition walk_lt (t1 t2 : T) : Prop := 
+  triangle_measure t1 < triangle_measure t2.
 
 Lemma walk_lt_trans : 
   forall (t1 t2 t3 : T),
@@ -66,30 +65,24 @@ Lemma walk_lt_trans :
 Proof.
 rewrite /walk_lt.
 move => t1 t2 t3.
-by apply: ltr_trans.
+by apply: lt_trans.
 Qed.
 
 Lemma walk_lt_anti_refl :
   forall (t : T), ~ (walk_lt t t).
 Proof.
-Admitted.
+rewrite /walk_lt.
+move => t.
+by rewrite ltxx.
+Qed.
 
-(* Hypothesis walk_lt_trans : 
-  forall (t1 t2 t3 : T),
-  walk_lt t1 t2 -> walk_lt t2 t3 -> walk_lt t1 t3.
-
-Hypothesis walk_lt_anti_refl :
-  forall (t : T), ~ (walk_lt t t). *)
-
-(* Lemma walk_lt_wf : WellFounded walk_lt.
+Instance walk_lt_wf : WellFounded walk_lt.
 Proof.
 rewrite /WellFounded.
 apply: wf_rel.
 apply: walk_lt_trans.
 by apply: walk_lt_anti_refl.
-Qed. *)
-
-Hypothesis walk_lt_wf : WellFounded walk_lt.
+Qed.
 
 Hypothesis  decrease_condition :
   forall (e : E) (t t' : T),
@@ -150,4 +143,3 @@ Qed.
 End walk_parameters.
 
 End parameters.
-
