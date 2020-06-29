@@ -1,48 +1,66 @@
-From mathcomp Require Import all_ssreflect all_algebra. 
+From mathcomp Require Import all_ssreflect all_algebra.
+
+Require Import matrix.
 
 Import GRing.Theory Num.Theory.
  
-Open Scope ring_scope. 
+Open Scope ring_scope.
 
 Section det.
 
-Variable R : realDomainType. 
+Variable R : realFieldType.
 
-Definition det3x3 (a1 a2 a3
-                  b1 b2 b3
-                  c1 c2 c3 : R) := 
-  a1 * b2 * c3 + a2 * b3 * c1 + a3 * b1 * c2 -
-  a1 * b3 * c2 - a3 * b2 * c1 - a2 * b1 * c3.
+Let R' := (R : Type).
 
-Definition x_ (A : R * R) := let (a_x, _) := A in a_x.
+Let mul : R' -> R' -> R' := @GRing.mul _.
+Let add : R' -> R' -> R' := @GRing.add _.
+Let sub : R' -> R' -> R' := (fun x y => x - y).
+Let opp : R' -> R' := @GRing.opp _.
+Let zero : R' := 0.
+Let one : R' := 1.
 
-Definition y_ (A : R * R) := let (_, a_y) := A in a_y.
+Let R2_theory :=
+  @mk_rt R' zero one add mul sub opp
+   (@eq R')
+   (@add0r R) (@addrC R) (@addrA R) (@mul1r R) (@mulrC R)
+     (@mulrA R) (@mulrDl R) (fun x y : R => erefl (x - y)) (@addrN R).
+
+Add Ring R2_Ring : R2_theory.
+
+Ltac mc_ring :=
+rewrite ?mxE /= ?(expr0, exprS, mulrS, mulr0n) -?[@GRing.add _]/add
+   -?[@GRing.mul _]/mul
+   -?[@GRing.opp _]/opp -?[1]/one -?[0]/zero;
+match goal with |- @eq ?X _ _ => change X with R' end;
+ring.
 
 Definition pt_norm (A : R * R) := 
-  (x_ A) * (x_ A) + (y_ A) * (y_ A). 
+  A.1 * A.1 + A.2 * A.2.
 
-Definition tr_area (A B C : R * R) := 
-  det3x3 (x_ A) (y_ A) 1
-         (x_ B) (y_ B) 1
-         (x_ C) (y_ C) 1.
+Definition tr_area (A B C : R * R) :=
+  \det (area_mx R pt_norm A B C).
 
 Definition out_circle (A B C D : R * R) :=
-  (pt_norm A) * (tr_area B C D) - (pt_norm B) * (tr_area A C D) +
-  (pt_norm C) * (tr_area A B D) - (pt_norm D) * (tr_area A B C).
+  \det (circle_mx R pt_norm A B C D).
 
-Definition power (A B C D : R * R) :=
-  if tr_area A B C != 0 then out_circle A B C D / tr_area A B C else 0.
+Definition power (A B C E: R * R) :=
+  out_circle A B C E / tr_area A B C.
 
 Lemma out_circle_diff (A B C D E : R * R) :
-  tr_area A D B * out_circle A B C E - tr_area A B C * out_circle A D B E =
-    tr_area A E B * out_circle A B C D.
+  out_circle A B C E * tr_area A D B - out_circle A D B E * tr_area A B C =
+    out_circle A B C D * tr_area A E B.
 Proof.
 move: A B C D E.
 move => [a_x a_y][b_x b_y][c_x c_y][d_x d_y][e_x e_y].
-rewrite /out_circle /pt_norm /tr_area /det3x3 /x_ /y_.
-(* ring.
-Qed. *)
-Admitted.
+rewrite /out_circle /tr_area.
+repeat rewrite (expand_det_col _ ord0) /cofactor /row' /col' !big_ord_recr
+   big_ord0 /= add0r !(mxE, ffunE, addn0, expr0, expr1, expr2, mxE, ffunE, 
+   det_mx00, mul1r, mulNr, mulrN, opprK, mulr1, addrA) /=.
+rewrite /pt_norm.
+by mc_ring. 
+Qed.
+
+Section decrease.
 
 Variable A : R * R.
 
@@ -54,19 +72,11 @@ Variable D : R * R.
 
 Variable E : R * R.
 
-Section decrease.
+Hypothesis ABC_lt0 : tr_area A B C > 0.
 
-(*    +A
-              +D
-                    +E
-  +C
-          +B *)
+Hypothesis ADB_lt0 : tr_area A D B > 0.
 
-Hypothesis ABC : tr_area A B C > 0.
-
-Hypothesis ADB : tr_area A D B > 0.
-
-Hypothesis AEB : tr_area A E B > 0.
+Hypothesis AEB_lt0 : tr_area A E B > 0.
 
 Hypothesis delaunay : out_circle A B C D > 0.
 
@@ -76,18 +86,28 @@ have power_diff :
   (power A B C E - power A D B E) * tr_area A B C * tr_area A D B =
     out_circle A B C D * tr_area A E B.
   rewrite /power.
-  have ABC_neq0 : tr_area A B C != 0.
-    by apply: lt0r_neq0 ABC.
-  have ADB_neq0 : tr_area A D B != 0.
-    by apply: lt0r_neq0 ADB.
-  rewrite ABC_neq0 ADB_neq0.
-  rewrite mulrBl.
-  rewrite mulrAC.
-  About divff.
-  rewrite (divff ABC_neq0).
-  
-Admitted.
-    
+  rewrite ?mulrBl mulfVK.
+  rewrite mulrAC mulfVK.
+  by apply: out_circle_diff.
+    by apply: lt0r_neq0 ADB_lt0.
+  by apply: lt0r_neq0 ABC_lt0.
+have mul_decrease : 
+  (power A B C E - power A D B E) * tr_area A B C * tr_area A D B > 0.
+  rewrite power_diff.
+  apply: mulr_gt0.
+    by apply: delaunay.
+  by apply: AEB_lt0.
+have step1 : (power A B C E - power A D B E) * tr_area A B C * tr_area A D B / tr_area A D B > 0.
+  by apply: divr_gt0 mul_decrease ADB_lt0.
+rewrite mulfK in step1.
+  have step2 : (power A B C E - power A D B E) * tr_area A B C / tr_area A B C > 0.
+    by apply: divr_gt0 step1 ABC_lt0.
+  rewrite mulfK in step2.
+    by apply: step2.
+  by apply: lt0r_neq0 ABC_lt0.
+by apply: lt0r_neq0 ADB_lt0.
+Qed.
+
 End decrease.
 
 End det.
