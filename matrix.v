@@ -6,10 +6,6 @@ Variable R : realDomainType.
 
 Variable pt_norm : R * R -> R.
 
-Definition select (A B C : R * R) :=
-  [ffun i : 'I_3 => 
-    if val i == 0 then A else if val i == 1 then B else C].
-
 Definition select3 (A B C : R * R) :=
   fun (i : nat) => 
     match i with
@@ -35,7 +31,6 @@ Definition project (A : R * R) :=
     | 2 => A.2
     | _ => pt_norm A
     end.
-
 
 Definition area_mx (A B C : R * R) :=
   (\matrix_(i < 3, j < 3) project (select3 A B C i) j)%R.
