@@ -70,8 +70,6 @@ Hypothesis AEB : tr_area A E B > 0.
 
 Hypothesis delaunay : out_circle A B C D > 0.
 
-Hypothesis fg : tr_area A B C != 0.
-
 Lemma power_decrease : power A B C E - power A D B E > 0.
 Proof.
 have power_diff : 
