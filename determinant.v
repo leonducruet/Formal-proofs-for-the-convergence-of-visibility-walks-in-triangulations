@@ -83,8 +83,8 @@ have power_diff :
   rewrite ABC_neq0 ADB_neq0.
   rewrite mulrBl.
   rewrite mulrAC.
-  About divrr.
-  rewrite (divrr ABC_neq0).
+  About divff.
+  rewrite (divff ABC_neq0).
   
 Admitted.
     
