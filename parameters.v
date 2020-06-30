@@ -23,11 +23,11 @@ Definition triangulation := {set T}.
 
 Variable is_Delaunay : triangulation -> bool.
 
+Section walk_parameters.
+
 Variable tr : triangulation.
 
 Variable target_point : P.
-
-Section walk_parameters.
 
 Hypothesis tr_is_Delaunay : is_Delaunay tr.
 
@@ -84,7 +84,7 @@ apply: walk_lt_trans.
 by apply: walk_lt_anti_refl.
 Qed.
 
-Hypothesis  decrease_condition :
+Hypothesis decrease_condition :
   forall (e : E) (t t' : T),
   separating_edge t = Some e -> 
     find_triangle_of_edge (opposite_edge e) = Some t' -> walk_lt t' t.
