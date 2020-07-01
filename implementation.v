@@ -1,4 +1,4 @@
-From mathcomp Require Import all_ssreflect all_algebra.
+From mathcomp Require Import all_ssreflect all_algebra finfun.
 
 Require Import parameters.
 Require Import determinant.
@@ -24,7 +24,7 @@ Variable coords : P -> R * R.
 Hypothesis inj_coords : 
   forall (p1 p2 : P), (coords p1) == (coords p2) -> p1 == p2.
 
-Definition E := {ffun 'I_2 -> P}.
+Definition E := [finType of {dffun 'I_2 -> P}].
 
 Lemma elimI2 (P' : 'I_2 -> Prop): P' 0 -> P' 1 -> forall i, P' i.
 Proof.
@@ -48,7 +48,7 @@ rewrite -ffunP.
 apply: elimI2; by rewrite /oppos_edge ?ffunE p1p1_I2.
 Qed.
 
-Definition T := {ffun 'I_3 -> P}.
+Definition T :=  [finType of {dffun 'I_3 -> P}].
 
 Definition edge_tr (t : T) : {ffun 'I_3 -> E} :=
   [ffun i : 'I_3 => [ffun j : 'I_2 => if val j == 0%N then t i else t (i + 1)]].
