@@ -3,7 +3,12 @@ From mathcomp Require Import all_ssreflect all_algebra.
 Require Import parameters.
 Require Import determinant.
 
-Import GRing.Theory Num.Theory Order.Theory.
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
+
+(* Import GRing.Theory Num.Theory Order.Theory. *)
 
 Open Scope ring_scope.
 
@@ -15,30 +20,45 @@ Variable P : finType.
 
 Variable coords : P -> R * R.
 
-Definition pt_eq (p1 p2 : P) :=
-  ((coords p1).1 == (coords p2).1) && ((coords p1).2 == (coords p2).2).
+Hypothesis inj_coords : 
+  forall (p1 p2 : P), (coords p1) == (coords p2) -> p1 == p2.
 
-Notation " p1 == p2 " := (pt_eq p1 p2).
-
-Variable E : finType.
-
-Variable edge : E -> P * P.
+Definition E := 'I_2 -> P.
 
 Definition edge_eq (e1 e2 : E) :=
-  ((edge e1).1 == (edge e2).1) && ((edge e1).2 == (edge e2).2).
+  forall (i : 'I_2), e1 i = e2 i.
 
-Notation " e1 == e2 " := (edge_eq e1 e2).
+Lemma elimI2 (P' : 'I_2 -> Prop): P' 0 -> P' 1 -> forall i, P' i.
+Proof.
+move=> p0 p1 [[ | [ | [ | ?]]] ci] //.
+    by have /eqP -> : Ordinal ci == 0.
+  by have /eqP -> : Ordinal ci == 1.
+Qed.
 
-Definition opposite_edge (e : E) :=
+(* Notation "e1 == e2" := (@edge_eq (e1 : E) (e2 : E)). *)
 
-Variable T : finType.
+Definition oppos_edge (e : E) : E := 
+  fun (i : 'I_2) => e (i + 1).
 
-Variable edges_tr : T -> 'I_3 -> E.
+Lemma inv_oppos_edge (e : E) : edge_eq (oppos_edge (oppos_edge e)) e.
+Proof.
+rewrite /oppos_edge /edge_eq.
+apply: elimI2.
+  have zero : (0 + 1 + 1 : 'I_2) = 0.
+    by apply /eqP.
+  by rewrite zero.
+have one : (1 + 1 + 1 : 'I_2) = 1.
+  by apply /eqP.
+by rewrite one.
+Qed.
 
-Variable points_tr : T -> 'I_3 -> P.
+Definition T := 'I_3 -> P.
+
+Definition edges_tr (t : T) (i : 'I_3) : E :=
+  fun (j : 'I_2) => if val i == 0%N then t i else t (i + 1).
 
 Definition edge_in (e : E) (t : T) :=
-  exists (i : 'I_3), (edges_tr t i) == e.
+  exists (i : 'I_3), edge_eq (edges_tr t i) e.
 
 Variable tr : triangulation T.
 
