@@ -55,7 +55,7 @@ Qed.
 Definition T := 'I_3 -> P.
 
 Definition edges_tr (t : T) (i : 'I_3) : E :=
-  fun (j : 'I_2) => if val i == 0%N then t i else t (i + 1).
+  fun (j : 'I_2) => if val j == 0%N then t i else t (i + 1).
 
 Definition edge_in (e : E) (t : T) :=
   exists (i : 'I_3), edge_eq (edges_tr t i) e.
