@@ -7,10 +7,11 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-
 (* Import GRing.Theory Num.Theory Order.Theory. *)
 
-Open Scope ring_scope.
+(* Open Scope ring_scope. *)
+
+(* ffune *)
 
 Section implementation.
 
@@ -23,10 +24,7 @@ Variable coords : P -> R * R.
 Hypothesis inj_coords : 
   forall (p1 p2 : P), (coords p1) == (coords p2) -> p1 == p2.
 
-Definition E := 'I_2 -> P.
-
-Definition edge_eq (e1 e2 : E) :=
-  forall (i : 'I_2), e1 i = e2 i.
+Definition E := {ffun 'I_2 -> P}.
 
 Lemma elimI2 (P' : 'I_2 -> Prop): P' 0 -> P' 1 -> forall i, P' i.
 Proof.
@@ -35,30 +33,28 @@ move=> p0 p1 [[ | [ | [ | ?]]] ci] //.
   by have /eqP -> : Ordinal ci == 1.
 Qed.
 
-(* Notation "e1 == e2" := (@edge_eq (e1 : E) (e2 : E)). *)
-
 Definition oppos_edge (e : E) : E := 
-  fun (i : 'I_2) => e (i + 1).
+  [ffun i : 'I_2 => e (i + 1)].
 
-Lemma inv_oppos_edge (e : E) : edge_eq (oppos_edge (oppos_edge e)) e.
+Lemma p1p1_I2 : 
+  forall (i : 'I_2), (i + 1 + 1 : 'I_2) = i.
 Proof.
-rewrite /oppos_edge /edge_eq.
-apply: elimI2.
-  have zero : (0 + 1 + 1 : 'I_2) = 0.
-    by apply /eqP.
-  by rewrite zero.
-have one : (1 + 1 + 1 : 'I_2) = 1.
-  by apply /eqP.
-by rewrite one.
+apply: elimI2; by apply /eqP.
 Qed.
 
-Definition T := 'I_3 -> P.
+Lemma inv_oppos_edge (e : E) : (oppos_edge (oppos_edge e)) = e.
+Proof.
+rewrite -ffunP.
+apply: elimI2; by rewrite /oppos_edge ?ffunE p1p1_I2.
+Qed.
 
-Definition edges_tr (t : T) (i : 'I_3) : E :=
-  fun (j : 'I_2) => if val j == 0%N then t i else t (i + 1).
+Definition T := {ffun 'I_3 -> P}.
+
+Definition edge_tr (t : T) : {ffun 'I_3 -> E} :=
+  [ffun i : 'I_3 => [ffun j : 'I_2 => if val j == 0%N then t i else t (i + 1)]].
 
 Definition edge_in (e : E) (t : T) :=
-  exists (i : 'I_3), edge_eq (edges_tr t i) e.
+  exists (i : 'I_3), (edge_tr t i) == e.
 
 Variable tr : triangulation T.
 
@@ -68,7 +64,10 @@ Variable tr : triangulation T.
       forall (i : 'I_3), dist t1 (coord (pt_tr t2 i)) > 0. *)
 
 Variable target_pt : P.
-  
+
+
+(* Lemma eq_dffun (g1 g2 : ∀ x, rT x) :
+   (∀ x, g1 x = g2 x) → finfun g1 = finfun g2. *)
 
 (* Hypothesis involution_opposite_edge : 
   forall (e : E), opposite_edge (opposite_edge e) = e.
