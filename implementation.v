@@ -24,7 +24,7 @@ Variable coords : P -> R * R.
 Hypothesis inj_coords : 
   forall (p1 p2 : P), (coords p1) == (coords p2) -> p1 == p2.
 
-Definition E := [finType of {dffun 'I_2 -> P}].
+Definition E := [finType of {ffun 'I_2 -> P}].
 
 Lemma elimI2 (P' : 'I_2 -> Prop): P' 0 -> P' 1 -> forall i, P' i.
 Proof.
@@ -48,29 +48,54 @@ rewrite -ffunP.
 apply: elimI2; by rewrite /oppos_edge ?ffunE p1p1_I2.
 Qed.
 
-Definition T :=  [finType of {dffun 'I_3 -> P}].
+Definition T :=  [finType of {ffun 'I_3 -> P}].
 
-Definition edge_tr (t : T) : {ffun 'I_3 -> E} :=
+Definition edges_tr (t : T) : {ffun 'I_3 -> E} :=
   [ffun i : 'I_3 => [ffun j : 'I_2 => if val j == 0%N then t i else t (i + 1)]].
 
 Definition edge_in (e : E) (t : T) :=
-  exists (i : 'I_3), (edge_tr t i) == e.
+  exists (i : 'I_3), (edges_tr t i) == e.
 
 Variable tr : triangulation T.
 
+Fixpoint find_triangle_aux (e : E) (tr_enum : list T) : option T :=
+  match tr_enum with
+  | nil => None
+  | t :: r => if (edge_in e t) then Some t else find_triangle_aux r
+  end.
+
+Definition find_triangle_of_edge (e : E) : option T :=
+  
+  let rec find_aux (tr' : list T) :=
+    match tr' with
+    | nil => None
+    | t :: r => if (edge_in e t) then Some t else find_aux r
+    end
+  in
+  find_aux (enum tr).
+  
+  
+
+Equations walk (current_triangle : T) 
+   : T + E by wf (current_triangle) walk_lt :=
+walk current_triangle with
+    separating_inspect current_triangle => { 
+     | exist _ (Some edge) eq1
+       with find_triangle_inspect (opposite_edge edge) => {
+          | exist _ (Some new_triangle) eq2 :=
+             walk new_triangle;
+          | exist _ None eq2 := inr (opposite_edge edge)};
+     | exist _ None eq1 := inl (current_triangle)}.
+
+Variable target_pt : P.
+
+Definition 
 (* Definition is_Delaunay :=
   forall (t1 t2 : T), 
     t1 \in tr -> t2 \in tr -> 
       forall (i : 'I_3), dist t1 (coord (pt_tr t2 i)) > 0. *)
 
-Variable target_pt : P.
-
-
-(* Lemma eq_dffun (g1 g2 : ∀ x, rT x) :
-   (∀ x, g1 x = g2 x) → finfun g1 = finfun g2. *)
-
-(* Hypothesis involution_opposite_edge : 
-  forall (e : E), opposite_edge (opposite_edge e) = e.
+(*
 
 Variable separating_edge : T -> option E.
 
