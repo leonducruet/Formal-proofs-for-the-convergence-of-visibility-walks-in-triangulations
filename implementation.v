@@ -51,7 +51,24 @@ Definition edges_tr (t : T) : {ffun 'I_3 -> E} :=
   [ffun i : 'I_3 => [ffun j : 'I_2 => if val j == 0%N then t i else t (i + 1)]].
 
 Definition edge_in (e : E) (t : T) :=
-  ((edges_tr t 0) == e) || ((edges_tr t 1) == e) || ((edges_tr t (1 + 1)) == e). 
+  ((edges_tr t 0) == e) || ((edges_tr t 1) == e) || ((edges_tr t (1 + 1)) == e).
+
+Lemma edge_in_exists (e : E) (t : T) :
+  (edge_in e t) -> exists (i : 'I_3), (edges_tr t i) = e.
+Proof.
+rewrite /edge_in.
+move /orP => h.
+destruct h as [h2 | h1].
+  move: h2.
+  move /orP => h2.
+  destruct h2 as [h3 | h2].
+    exists 0.
+    by apply /eqP : h3.
+  exists 1.
+  by apply /eqP : h2.
+exists (1 + 1).
+by apply /eqP : h1.
+Qed.
 
 (* Definition is_Delaunay (tr' : triangulation [finType of T]) : bool :=
   forall (t : T), t \in tr' -> 
@@ -74,7 +91,7 @@ Definition find_triangle_of_edge (e : E) : option T :=
   find_triangle_in_list (edge_in e) (enum tr).
 
 Lemma correc_find_triangle (e : E) (t : T) :
-  find_triangle_of_edge e = Some t <-> edge_in e t.
+  find_triangle_of_edge e = Some t -> edge_in e t.
 Proof.
 Admitted.
 
@@ -141,7 +158,14 @@ Lemma decrease_condition :
     find_triangle_of_edge (oppos_edge e) = Some t' -> walk_lt R [finType of T] triangle_measure t' t.
 Proof.
 move => e t1 t2 h1 h2.
-have neighours : exists (i : 'I_3), (t1 i = t2 i) /\ (t1 (i + 1) = t2 (i - 1)).
+have neighours : exists (i j : 'I_3), (t1 i = t2 j) /\ (t1 (i + 1) = t2 (j - 1)).
+  have e_in_t1: exists (i : 'I_3), edges_tr t1 i = e.
+    apply: edge_in_exists.
+    by apply: separating_edge_in_triangle h1.
+  have oppos_e_in_t2: exists (i : 'I_3), edges_tr t2 i = oppos_edge e.
+    apply: edge_in_exists.
+    by apply: correc_find_triangle h2.
+
 
 rewrite /walk_lt /triangle_measure -subr_gt0.
 About power_decrease.
