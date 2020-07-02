@@ -91,7 +91,7 @@ Definition find_triangle_of_edge (e : E) : option T :=
   find_triangle_in_list (edge_in e) (enum tr).
 
 Lemma correc_find_triangle (e : E) (t : T) :
-  find_triangle_of_edge e = Some t -> edge_in e t.
+  find_triangle_of_edge e = Some t <-> edge_in e t.
 Proof.
 Admitted.
 
@@ -158,15 +158,29 @@ Lemma decrease_condition :
     find_triangle_of_edge (oppos_edge e) = Some t' -> walk_lt R [finType of T] triangle_measure t' t.
 Proof.
 move => e t1 t2 h1 h2.
-have neighours : exists (i j : 'I_3), (t1 i = t2 j) /\ (t1 (i + 1) = t2 (j - 1)).
+have neighours : exists (i j : 'I_3), (t1 i = t2 (j + 1)) /\ (t1 (i + 1) = t2 j).
   have e_in_t1: exists (i : 'I_3), edges_tr t1 i = e.
     apply: edge_in_exists.
     by apply: separating_edge_in_triangle h1.
   have oppos_e_in_t2: exists (i : 'I_3), edges_tr t2 i = oppos_edge e.
     apply: edge_in_exists.
-    by apply: correc_find_triangle h2.
-
-
+    rewrite -correc_find_triangle.
+    by apply: h2.
+  destruct e_in_t1 as [i].
+  destruct oppos_e_in_t2 as [j].
+  rewrite -H in H0.
+  move: H0.
+  rewrite -ffunP .
+  move => H'.
+  move: (H' 0).
+  move: (H' 1).
+  move => H0 H1.
+  rewrite !ffunE /= in H0.
+  rewrite !ffunE /= in H1.
+  exists i.
+  exists j.
+  split; by [].
 rewrite /walk_lt /triangle_measure -subr_gt0.
-About power_decrease.
+
+
 
