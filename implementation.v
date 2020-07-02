@@ -1,4 +1,5 @@
-From mathcomp Require Import all_ssreflect all_algebra finfun.
+From mathcomp Require Import all_ssreflect all_algebra.
+From Equations Require Import Equations.
 
 Require Import parameters.
 Require Import determinant.
@@ -7,11 +8,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-(* Import GRing.Theory Num.Theory Order.Theory. *)
-
-(* Open Scope ring_scope. *)
-
-(* ffune *)
+Import Num.Theory.
 
 Section implementation.
 
@@ -24,7 +21,7 @@ Variable coords : P -> R * R.
 Hypothesis inj_coords : 
   forall (p1 p2 : P), (coords p1) == (coords p2) -> p1 == p2.
 
-Definition E := [finType of {ffun 'I_2 -> P}].
+Definition E := {ffun 'I_2 -> P}.
 
 Lemma elimI2 (P' : 'I_2 -> Prop): P' 0 -> P' 1 -> forall i, P' i.
 Proof.
@@ -48,74 +45,104 @@ rewrite -ffunP.
 apply: elimI2; by rewrite /oppos_edge ?ffunE p1p1_I2.
 Qed.
 
-Definition T :=  [finType of {ffun 'I_3 -> P}].
+Definition T := {ffun 'I_3 -> P}.
 
 Definition edges_tr (t : T) : {ffun 'I_3 -> E} :=
   [ffun i : 'I_3 => [ffun j : 'I_2 => if val j == 0%N then t i else t (i + 1)]].
 
 Definition edge_in (e : E) (t : T) :=
-  exists (i : 'I_3), (edges_tr t i) == e.
+  ((edges_tr t 0) == e) || ((edges_tr t 1) == e) || ((edges_tr t (1 + 1)) == e). 
 
-Variable tr : triangulation T.
+(* Definition is_Delaunay (tr' : triangulation [finType of T]) : bool :=
+  forall (t : T), t \in tr' -> 
+    forall (p : P), exists  *)
 
-Fixpoint find_triangle_aux (e : E) (tr_enum : list T) : option T :=
+Variable tr : triangulation [finType of T].
+
+Fixpoint find_triangle_in_list (p : T -> bool) (tr_enum : list T) : option T :=
   match tr_enum with
   | nil => None
-  | t :: r => if (edge_in e t) then Some t else find_triangle_aux r
+  | t :: tail => if (p t) then Some t else find_triangle_in_list p tail
   end.
 
+(* Equations find_triangle_in_list (p : T -> bool) (tr_enum : list T) : option T :=
+  find_triangle_in_list p nil := None;
+  find_triangle_in_list p (cons t tail) 
+    with find_triangle_in_list p tail => { |opt := if p t then Some t else opt}.
+ *)
 Definition find_triangle_of_edge (e : E) : option T :=
-  
-  let rec find_aux (tr' : list T) :=
-    match tr' with
-    | nil => None
-    | t :: r => if (edge_in e t) then Some t else find_aux r
-    end
-  in
-  find_aux (enum tr).
-  
-  
+  find_triangle_in_list (edge_in e) (enum tr).
 
-Equations walk (current_triangle : T) 
-   : T + E by wf (current_triangle) walk_lt :=
-walk current_triangle with
-    separating_inspect current_triangle => { 
-     | exist _ (Some edge) eq1
-       with find_triangle_inspect (opposite_edge edge) => {
-          | exist _ (Some new_triangle) eq2 :=
-             walk new_triangle;
-          | exist _ None eq2 := inr (opposite_edge edge)};
-     | exist _ None eq1 := inl (current_triangle)}.
+Lemma correc_find_triangle (e : E) (t : T) :
+  find_triangle_of_edge e = Some t <-> edge_in e t.
+Proof.
+Admitted.
 
 Variable target_pt : P.
 
-Definition 
-(* Definition is_Delaunay :=
-  forall (t1 t2 : T), 
-    t1 \in tr -> t2 \in tr -> 
-      forall (i : 'I_3), dist t1 (coord (pt_tr t2 i)) > 0. *)
+(* Definition triangle_area (t : T) :=
+  tr_area R (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))). *)
 
-(*
+(* Hypothesis non_empty_triangles :
+  forall (t : T), triangle_area t != 0. *)
 
-Variable separating_edge : T -> option E.
+(* Definition is_separating_edge (e : E) :=
+  tr_area (coords (e 0)) (coords (e 1)) (coords target_pt). *)
 
-Definition target_in (t : T) :=
-  separating_edge t == None.
+Definition is_separating_edge (t : T) (i : 'I_3) :=
+  0 < tr_area R (coords (t i)) (coords target_pt) (coords (t (i + 1))).
 
-Hypothesis separating_edge_in_triangle : 
+Definition separating_edge (t : T) :=
+  if (is_separating_edge t 0) then Some (edges_tr t 0) 
+    else if (is_separating_edge t 1) then Some (edges_tr t 1)
+    else if (is_separating_edge t (1 + 1)) then Some (edges_tr t (1 + 1))
+    else None.
+
+Lemma separating_edge_in_triangle :
   forall (e : E) (t : T),
   separating_edge t = Some e -> edge_in e t.
+Proof.
+move => e t.
+rewrite /separating_edge.
+case: (is_separating_edge t).
+  rewrite /edge_in.
+  move => h.
+  apply /orP.
+  left.
+  apply /orP.
+  left.
+  apply /eqP.
+  by apply: Some_inj h.
+case: (is_separating_edge t).
+  rewrite /edge_in.
+  move => h.
+  apply /orP.
+  left.
+  apply /orP.
+  right.
+  apply /eqP.
+  by apply: Some_inj h.
+case: (is_separating_edge t).
+  rewrite /edge_in.
+  move => h.
+  apply /orP.
+  right.
+  apply /eqP.
+  by apply: Some_inj h.
+by [].
+Qed.
 
-Variable find_triangle_of_edge : E -> option T.
+Definition triangle_measure (t : T) :=
+  power R (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))) (coords target_pt).
 
-Hypothesis correction_find_triangle :
-  forall (e : E) (t : T),
-  find_triangle_of_edge e = Some t <-> edge_in e t.
+Lemma decrease_condition :
+  forall (e : E) (t t' : T),
+  separating_edge t = Some e -> 
+    find_triangle_of_edge (oppos_edge e) = Some t' -> walk_lt R [finType of T] triangle_measure t' t.
+Proof.
+move => e t1 t2 h1 h2.
+have neighours : exists (i : 'I_3), (t1 i = t2 i) /\ (t1 (i + 1) = t2 (i - 1)).
 
-Variable triangle_measure : T -> R.
-
-Hypothesis positive_measure :
-  forall (t : T), triangle_measure t >= 0. *)
-
-
+rewrite /walk_lt /triangle_measure -subr_gt0.
+About power_decrease.
 
