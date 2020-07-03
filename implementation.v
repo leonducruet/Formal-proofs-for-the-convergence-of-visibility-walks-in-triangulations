@@ -93,12 +93,9 @@ Lemma starter_pt_dist (i : 'I_3) (t : T) (p : P) :
 Proof.
 Admitted.
 
-Definition is_DelaunayT (t1 t2 : T) (i : 'I_3) :=
-  ( ~ edge_in (edges_tr t2 i) t1) -> 0 < tr_dist t1 (t2 i).
-
 Definition is_Delaunay (tr' : triangulation [finType of T]) :=
   forall (t1 t2 : T), t1 \in tr' -> t2 \in tr' ->
-  forall (i : 'I_3), is_DelaunayT t1 t2 i.
+  forall (i : 'I_3), ( ~ edge_in (edges_tr t2 i) t1) -> 0 < tr_dist t1 (t2 i).
 
 Variable tr : triangulation [finType of T].
 
