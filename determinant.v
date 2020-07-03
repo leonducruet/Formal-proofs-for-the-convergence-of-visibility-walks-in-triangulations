@@ -40,11 +40,43 @@ Definition pt_norm (A : R * R) :=
 Definition tr_area (A B C : R * R) :=
   \det (area_mx R pt_norm A B C).
 
+Lemma inv_cycle_tr_area (A B C : R * R) :
+  tr_area A B C = tr_area C A B.
+Proof.
+move: A B C.
+move => [a_x a_y][b_x b_y][c_x c_y].
+rewrite /tr_area.
+repeat rewrite (expand_det_col _ ord0) /cofactor /row' /col' !big_ord_recr
+   big_ord0 /= add0r !(mxE, ffunE, addn0, expr0, expr1, expr2, mxE, ffunE, 
+   det_mx00, mul1r, mulNr, mulrN, opprK, mulr1, addrA) /=.
+rewrite /pt_norm.
+by mc_ring.
+Qed.
+
 Definition out_circle (A B C D : R * R) :=
   \det (circle_mx R pt_norm A B C D).
 
+Lemma inv_cycle_out_circle (A B C D : R * R) :
+  out_circle A B C D = out_circle C A B D.
+Proof.
+move: A B C D.
+move => [a_x a_y][b_x b_y][c_x c_y][d_x d_y].
+rewrite /out_circle /tr_area.
+repeat rewrite (expand_det_col _ ord0) /cofactor /row' /col' !big_ord_recr
+   big_ord0 /= add0r !(mxE, ffunE, addn0, expr0, expr1, expr2, mxE, ffunE, 
+   det_mx00, mul1r, mulNr, mulrN, opprK, mulr1, addrA) /=.
+rewrite /pt_norm.
+by mc_ring.
+Qed.
+
 Definition power (A B C E: R * R) :=
   out_circle A B C E / tr_area A B C.
+
+Lemma inv_cycle_power (A B C E : R * R) :
+  power A B C E = power C A B E.
+Proof.
+by rewrite /power inv_cycle_out_circle inv_cycle_tr_area.
+Qed.
 
 Lemma out_circle_diff (A B C D E : R * R) :
   out_circle A B C E * tr_area A D B - out_circle A D B E * tr_area A B C =

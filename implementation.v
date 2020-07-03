@@ -70,9 +70,35 @@ exists (1 + 1).
 by apply /eqP : h1.
 Qed.
 
-(* Definition is_Delaunay (tr' : triangulation [finType of T]) : bool :=
-  forall (t : T), t \in tr' -> 
-    forall (p : P), exists  *)
+Lemma elimI3 (P' : 'I_3 -> Prop): P' 0 -> P' 1 -> P' (1 + 1) -> forall i, P' i.
+Proof.
+move=> p0 p1 p2 [[ | [ | [ | ?]]] ci] //.
+    by have /eqP -> : Ordinal ci == 0.
+  by have /eqP -> : Ordinal ci == 1.
+by have /eqP -> : Ordinal ci == (1 + 1).
+Qed.
+
+Lemma p1p1_I3 : 
+  forall (i : 'I_3), (i + 1 + 1 + 1 : 'I_3) = i.
+Proof.
+apply: elimI3; by apply /eqP.
+Qed.
+
+Definition tr_dist (t : T) (p : P) :=
+  out_circle R (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))) (coords p).
+
+Lemma starter_pt_dist (i : 'I_3) (t : T) (p : P) :
+  forall (i : 'I_3), 
+  tr_dist t p = out_circle R (coords (t i)) (coords (t (i + 1))) (coords (t (i + 1 + 1))) (coords p).
+Proof.
+Admitted.
+
+Definition is_DelaunayT (t1 t2 : T) (i : 'I_3) :=
+  ( ~ edge_in (edges_tr t2 i) t1) -> 0 < tr_dist t1 (t2 i).
+
+Definition is_Delaunay (tr' : triangulation [finType of T]) :=
+  forall (t1 t2 : T), t1 \in tr' -> t2 \in tr' ->
+  forall (i : 'I_3), is_DelaunayT t1 t2 i.
 
 Variable tr : triangulation [finType of T].
 
@@ -87,6 +113,7 @@ Fixpoint find_triangle_in_list (p : T -> bool) (tr_enum : list T) : option T :=
   find_triangle_in_list p (cons t tail) 
     with find_triangle_in_list p tail => { |opt := if p t then Some t else opt}.
  *)
+
 Definition find_triangle_of_edge (e : E) : option T :=
   find_triangle_in_list (edge_in e) (enum tr).
 
@@ -97,9 +124,16 @@ Admitted.
 
 Variable target_pt : P.
 
-(* Definition triangle_area (t : T) :=
-  tr_area R (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))). *)
+Definition triangle_area (t : T) :=
+  tr_area R (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))).
 
+Lemma starter_pt_triangle_area (i : 'I_3) (t : T) :
+  triangle_area t = tr_area R (coords (t i)) (coords (t (i +1))) (coords (t (i + 1 + 1))).
+Proof.
+Admitted.
+
+Hypothesis tr_orientation :
+  forall (t : T), 0 < triangle_area t.
 (* Hypothesis non_empty_triangles :
   forall (t : T), triangle_area t != 0. *)
 
@@ -114,6 +148,12 @@ Definition separating_edge (t : T) :=
     else if (is_separating_edge t 1) then Some (edges_tr t 1)
     else if (is_separating_edge t (1 + 1)) then Some (edges_tr t (1 + 1))
     else None.
+
+Lemma separating_edge_is_separating_edge :
+  forall (e : E) (t : T) (i : 'I_3),
+  separating_edge t = Some e -> edges_tr t i = e -> is_separating_edge t i.
+Proof.
+Admitted.
 
 Lemma separating_edge_in_triangle :
   forall (e : E) (t : T),
@@ -149,8 +189,26 @@ case: (is_separating_edge t).
 by [].
 Qed.
 
+(* Definition tr_dist (t : T) (p : P) := 
+  power R (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))) (coords p).
+
+Lemma starter_pt_dist (i : 'I_3) (t : T) (p : P) :
+  tr_dist t p = power R (coords (t i)) (coords (t (i + 1))) (coords (t (i + 1 + 1))) (coords p).
+Proof.
+Admitted. *)
+
 Definition triangle_measure (t : T) :=
   power R (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))) (coords target_pt).
+
+Lemma starter_pt_measure (i : 'I_3) (t : T) (p : P) :
+  triangle_measure t = power R (coords (t i)) (coords (t (i + 1))) (coords (t (i + 1 + 1))) (coords target_pt).
+Proof.
+Admitted.
+
+Lemma is_Delaunay_tr :
+  is_Delaunay tr.
+Proof.
+Admitted.
 
 Lemma decrease_condition :
   forall (e : E) (t t' : T),
@@ -158,7 +216,9 @@ Lemma decrease_condition :
     find_triangle_of_edge (oppos_edge e) = Some t' -> walk_lt R [finType of T] triangle_measure t' t.
 Proof.
 move => e t1 t2 h1 h2.
-have neighours : exists (i j : 'I_3), (t1 i = t2 (j + 1)) /\ (t1 (i + 1) = t2 j).
+have neighbours : exists (i j : 'I_3), 
+  (t1 i = t2 (j + 1)) /\ (t1 (i + 1) = t2 j) /\ 
+  (is_separating_edge t1 i) /\ ( ~ edge_in (edges_tr t2 (j + 1 + 1)) t1).
   have e_in_t1: exists (i : 'I_3), edges_tr t1 i = e.
     apply: edge_in_exists.
     by apply: separating_edge_in_triangle h1.
@@ -167,7 +227,12 @@ have neighours : exists (i j : 'I_3), (t1 i = t2 (j + 1)) /\ (t1 (i + 1) = t2 j)
     rewrite -correc_find_triangle.
     by apply: h2.
   destruct e_in_t1 as [i].
+  have edge_is_separating : is_separating_edge t1 i.
+    apply: separating_edge_is_separating_edge.
+      by apply: h1.
+    by apply: H.
   destruct oppos_e_in_t2 as [j].
+
   rewrite -H in H0.
   move: H0.
   rewrite -ffunP .
@@ -180,7 +245,32 @@ have neighours : exists (i j : 'I_3), (t1 i = t2 (j + 1)) /\ (t1 (i + 1) = t2 j)
   exists i.
   exists j.
   split; by [].
-rewrite /walk_lt /triangle_measure -subr_gt0.
+rewrite /walk_lt -subr_gt0.
+destruct neighbours as [i h].
+destruct h as [j].
+rewrite (starter_pt_measure i t1 target_pt) (starter_pt_measure (j + 1) t2 target_pt).
+rewrite p1p1_I3.
+destruct H as [H1 H2].
+destruct H2 as [H2 H3].
+rewrite -H1 -H2.
+apply: (power_decrease R).
+      rewrite -(starter_pt_triangle_area i t1).
+      by apply: tr_orientation.
+    rewrite H1 H2.
+    rewrite (inv_cycle_tr_area R).
+    rewrite -(starter_pt_triangle_area j t2).
+    by apply: tr_orientation.
+  by apply: H3.
+rewrite -(starter_pt_dist i t1).
+have 
+apply: (is_DelaunayT t1 t2 (j + 1 + 1)).
+
+(* Definition is_DelaunayT (t1 t2 : T) (i : 'I_3) :=
+  ( ~ edge_in (edges_tr t2 i) t1) -> 0 < tr_dist t1 (t2 i). *)
+apply: (is_Delaunay tr).
+
+rewrite starter_pt_dist.
+
 
 
 
