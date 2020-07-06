@@ -110,14 +110,33 @@ Proof.
 apply: elimI3; by apply /eqP.
 Qed.
 
+Lemma p10 : (0 + 1 : 'I_3) = 1.
+Proof.
+by [].
+Qed.
+
+Lemma p1p10 : (0 + 1 + 1 : 'I_3) = (1 + 1).
+Proof.
+by [].
+Qed.
+
+Lemma p1p11 : (1 + 1 + 1 : 'I_3) = 0.
+Proof.
+by apply /eqP.
+Qed.
+
 Definition tr_dist (t : T) (p : P) :=
   out_circle R (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))) (coords p).
 
-Lemma starter_pt_dist (i : 'I_3) (t : T) (p : P) :
-  forall (i : 'I_3), 
+Lemma starter_pt_dist (i : 'I_3) (t : T) (p : P) : 
   tr_dist t p = out_circle R (coords (t i)) (coords (t (i + 1))) (coords (t (i + 1 + 1))) (coords p).
 Proof.
-Admitted.
+move: i.
+apply : elimI3.
+    by rewrite p10 p1p10.
+  by rewrite p1p11 (inv_cycle_out_circle R).
+by rewrite p1p11 p10 -(inv_cycle_out_circle R).
+Qed.
 
 Variable tr : triangulation [finType of T].
 
@@ -175,12 +194,6 @@ Lemma separating_edge_is_separating_edge :
   forall (t : T) (i : 'I_3),
   separating_edge t = Some (edges_tr t i) -> is_separating_edge t i.
 Proof.
-have p10 : (0 + 1 : 'I_3) = 1.
-by [].
-have p1p10 : (0 + 1 + 1 : 'I_3) = (1 + 1).
-by [].
-have p1p11 : (1 + 1 + 1 : 'I_3) = 0.
-by apply /eqP.
 have with_i (t : T) : 
   forall (i : 'I_3),
   separating_edge_i t i = Some (edges_tr t i) -> is_separating_edge t i.
@@ -319,6 +332,8 @@ Definition triangle_measure (t : T) :=
 Lemma starter_pt_measure (i : 'I_3) (t : T) (p : P) :
   triangle_measure t = power R (coords (t i)) (coords (t (i + 1))) (coords (t (i + 1 + 1))) (coords target_pt).
 Proof.
+move: i.
+apply : elimI3.
 Admitted.
 
 Hypothesis is_Delaunay_tr :
@@ -386,6 +401,8 @@ rewrite -(starter_pt_dist i t1).
 by apply: is_Delaunay_tr.
 Qed.
 
+4 lemmes
+tr
 
 
 
