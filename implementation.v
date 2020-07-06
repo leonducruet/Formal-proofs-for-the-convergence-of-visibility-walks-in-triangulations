@@ -140,25 +140,98 @@ Qed.
 
 Variable tr : triangulation [finType of T].
 
+(* à prouver *)
+Hypothesis unique_edge :
+  forall (t : T) (e : E), t \in (enum tr) -> (edge_in e t) -> 
+    forall (t' : T), t != t' -> ~ (edge_in e t').
+
 Fixpoint find_triangle_in_list (p : T -> bool) (tr_enum : list T) : option T :=
   match tr_enum with
   | nil => None
   | t :: tail => if (p t) then Some t else find_triangle_in_list p tail
   end.
 
-(* Equations find_triangle_in_list (p : T -> bool) (tr_enum : list T) : option T :=
-  find_triangle_in_list p nil := None;
-  find_triangle_in_list p (cons t tail) 
-    with find_triangle_in_list p tail => { |opt := if p t then Some t else opt}.
- *)
+Lemma correc_find_triangle_in_list (p : T -> bool) (tr_enum : list T) :
+  forall (t : T), 
+  find_triangle_in_list p tr_enum = Some t -> (p t) /\ (t \in tr_enum).
+Proof.
+move => t.
+elim: tr_enum.
+  by [].
+move => a l HR.
+rewrite /find_triangle_in_list.
+case_eq (p a).
+  move => h0.
+  move /Some_inj => h1.
+  rewrite -h1.
+  split.
+    by [].
+  rewrite in_cons.
+  apply /orP.
+  by left.
+move => npa H.
+have Pl : p t /\ t \in l.
+  by apply: HR.
+destruct Pl as [H1 H2].
+have t_in_al : t \in a :: l.
+  rewrite in_cons.
+  apply /orP.
+  by right.
+by split.
+Qed.
+
+Lemma unique_result (p : T -> bool) (tr_enum : list T) :
+  forall (t1 : T),
+  (p t1) -> (forall (t2 : T), t1 != t2 -> ~ (p t2)) ->
+    (find_triangle_in_list p (tr_enum) = Some t1) \/ ~~ (t1 \in tr_enum).
+Proof.
+move => t1 h1 h2.
+elim : tr_enum.
+  right.
+  by rewrite in_nil.
+move => a l.
+case_eq (t1 == a).
+move => a_eq_t1_bool HR.
+  left.
+  have a_eq_t1 : t1 = a.
+    by apply /eqP.
+  by rewrite -a_eq_t1 /find_triangle_in_list h1.
+move => a_diff_t1_bool HR.
+have a_diff_t1 : t1 != a.
+    by rewrite a_diff_t1_bool.
+case_eq (p a).
+  have not_pa : ~ p a.
+    by apply: h2.
+  move => not_pa2.
+  move : not_pa.
+  by rewrite not_pa2.
+move => npa.
+rewrite /find_triangle_in_list npa.
+have not_in (x y : T) (s : list T) : ((x == y) = false) -> ((x \in y :: s) = (x \in s)).
+  move => H1.
+  by rewrite in_cons H1 /=.
+by rewrite (not_in t1 a l a_diff_t1_bool).
+Qed.
 
 Definition find_triangle_of_edge (e : E) : option T :=
   find_triangle_in_list (edge_in e) (enum tr).
 
 Lemma correc_find_triangle (e : E) (t : T) :
-  find_triangle_of_edge e = Some t <-> edge_in e t.
+  find_triangle_of_edge e = Some t <-> (edge_in e t) /\ (t \in (enum tr)).
 Proof.
-Admitted.
+split.
+  rewrite /find_triangle_of_edge.
+  by apply: correc_find_triangle_in_list.
+move => H.
+destruct H as [H1 H2].
+have uni_edge : forall (t' : T), t != t' -> ~ (edge_in e t').
+  by apply: unique_edge.
+have aux : (find_triangle_in_list (edge_in e) (enum tr) = Some t) \/ (~~ (t \in (enum tr))).
+  by apply: unique_result.
+rewrite H2 /= in aux.
+rewrite /find_triangle_of_edge.
+by destruct aux.
+Qed.
 
 Variable target_pt : P.
 
@@ -177,11 +250,6 @@ Qed.
 
 Hypothesis tr_orientation :
   forall (t : T), 0 < triangle_area t.
-(* Hypothesis non_empty_triangles :
-  forall (t : T), triangle_area t != 0. *)
-
-(* Definition is_separating_edge (e : E) :=
-  tr_area (coords (e 0)) (coords (e 1)) (coords target_pt). *)
 
 Definition is_separating_edge (t : T) (i : 'I_3) :=
   0 < tr_area R (coords (t i)) (coords target_pt) (coords (t (i + 1))).
@@ -339,14 +407,17 @@ Lemma starter_pt_measure (i : 'I_3) (t : T) (p : P) :
 Proof.
 move: i.
 apply : elimI3.
-Admitted.
+    by rewrite p10.
+  by rewrite p1p11 (inv_cycle_power R).
+by rewrite p1p11 p10 -(inv_cycle_power R).
+Qed.
 
 Hypothesis is_Delaunay_tr :
   forall (t1 t2 : T) (i : 'I_3), (* t1 \in tr -> t2 \in tr -> *)
   ( ~ point_in (t2 i) t1) -> 0 < tr_dist t1 (t2 i).
 
 Lemma decrease_condition :
-  forall (e : E) (t t' : T),
+  forall (e : E) (t t' : T), 
   separating_edge t = Some e -> 
     find_triangle_of_edge (oppos_edge e) = Some t' -> walk_lt R [finType of T] triangle_measure t' t.
 Proof.
@@ -359,6 +430,10 @@ have neighbours : exists (i j : 'I_3),
     by apply: separating_edge_in_triangle h1.
   have oppos_e_in_t2: exists (i : 'I_3), edges_tr t2 i = oppos_edge e.
     apply: edge_in_exists.
+    have aux : (edge_in (oppos_edge e) t2) /\ (t2 \in (enum tr)) -> edge_in (oppos_edge e) t2.
+      move => H.
+      by destruct H as [H1 H2].
+    apply: aux.  
     rewrite -correc_find_triangle.
     by apply: h2.
   destruct e_in_t1 as [i].
@@ -406,8 +481,6 @@ rewrite -(starter_pt_dist i t1).
 by apply: is_Delaunay_tr.
 Qed.
 
-4 lemmes
-tr
 
 
 
