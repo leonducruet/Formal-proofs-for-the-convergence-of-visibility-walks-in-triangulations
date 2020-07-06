@@ -168,7 +168,12 @@ Definition triangle_area (t : T) :=
 Lemma starter_pt_triangle_area (i : 'I_3) (t : T) :
   triangle_area t = tr_area R (coords (t i)) (coords (t (i +1))) (coords (t (i + 1 + 1))).
 Proof.
-Admitted.
+move: i.
+apply : elimI3.
+    by rewrite p10 p1p10.
+  by rewrite p1p11 (inv_cycle_tr_area R).
+by rewrite p1p11 p10 -(inv_cycle_tr_area R).
+Qed.
 
 Hypothesis tr_orientation :
   forall (t : T), 0 < triangle_area t.
