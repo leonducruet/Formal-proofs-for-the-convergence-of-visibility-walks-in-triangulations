@@ -391,14 +391,6 @@ case: (is_separating_edge t).
 by [].
 Qed.
 
-(* Definition tr_dist (t : T) (p : P) := 
-  power R (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))) (coords p).
-
-Lemma starter_pt_dist (i : 'I_3) (t : T) (p : P) :
-  tr_dist t p = power R (coords (t i)) (coords (t (i + 1))) (coords (t (i + 1 + 1))) (coords p).
-Proof.
-Admitted. *)
-
 Definition triangle_measure (t : T) :=
   power R (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))) (coords target_pt).
 
