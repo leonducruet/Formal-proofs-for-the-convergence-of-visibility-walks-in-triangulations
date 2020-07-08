@@ -53,6 +53,32 @@ rewrite /pt_norm.
 by mc_ring.
 Qed.
 
+Lemma flipr_tr_area (A B C : R * R) :
+  tr_area A B C = - tr_area A C B.
+Proof.
+move: A B C.
+move => [a_x a_y][b_x b_y][c_x c_y].
+rewrite /tr_area.
+repeat rewrite (expand_det_col _ ord0) /cofactor /row' /col' !big_ord_recr
+   big_ord0 /= add0r !(mxE, ffunE, addn0, expr0, expr1, expr2, mxE, ffunE, 
+   det_mx00, mul1r, mulNr, mulrN, opprK, mulr1, addrA) /=.
+rewrite /pt_norm.
+by mc_ring.
+Qed.
+
+Lemma flipl_tr_area (A B C : R * R) :
+  tr_area A B C = - tr_area B A C.
+Proof.
+move: A B C.
+move => [a_x a_y][b_x b_y][c_x c_y].
+rewrite /tr_area.
+repeat rewrite (expand_det_col _ ord0) /cofactor /row' /col' !big_ord_recr
+   big_ord0 /= add0r !(mxE, ffunE, addn0, expr0, expr1, expr2, mxE, ffunE, 
+   det_mx00, mul1r, mulNr, mulrN, opprK, mulr1, addrA) /=.
+rewrite /pt_norm.
+by mc_ring.
+Qed.
+
 Definition out_circle (A B C D : R * R) :=
   \det (circle_mx R pt_norm A B C D).
 
