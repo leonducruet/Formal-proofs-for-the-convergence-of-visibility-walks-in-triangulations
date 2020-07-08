@@ -18,8 +18,8 @@ Variable P : finType.
 
 Variable coords : P -> R * R.
 
-Hypothesis inj_coords : 
-  forall (p1 p2 : P), (coords p1) == (coords p2) -> p1 == p2.
+(* Hypothesis inj_coords : 
+  forall (p1 p2 : P), (coords p1) == (coords p2) -> p1 == p2. *)
 
 Definition E := {ffun 'I_2 -> P}.
 
@@ -28,6 +28,14 @@ Proof.
 move=> p0 p1 [[ | [ | [ | ?]]] ci] //.
     by have /eqP -> : Ordinal ci == 0.
   by have /eqP -> : Ordinal ci == 1.
+Qed.
+
+Lemma elimI3 (P' : 'I_3 -> Prop): P' 0 -> P' 1 -> P' (1 + 1) -> forall i, P' i.
+Proof.
+move=> p0 p1 p2 [[ | [ | [ | ?]]] ci] //.
+    by have /eqP -> : Ordinal ci == 0.
+  by have /eqP -> : Ordinal ci == 1.
+by have /eqP -> : Ordinal ci == (1 + 1).
 Qed.
 
 Definition oppos_edge (e : E) : E := 
@@ -47,8 +55,22 @@ Qed.
 
 Definition T := {ffun 'I_3 -> P}.
 
+(*
+1/ pqr -> qrp
+2/ pqr -> ~ prq
+3/ p!=q -> q!=r -> p!=r -> pqr \/ prq
+4/ tqr /\ ptr /\ pqt -> pqr
+5/ tsp /\ tsq /\ tsr /\ tpq /\ tqr -> tpr 
+*)
+
 Hypothesis inj_triangles : 
   forall (t : T), forall (i j : 'I_3), (t i) == (t j) -> i == j.
+
+Definition triangle_area (t : T) :=
+  tr_area R (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))).
+
+Hypothesis tr_orientation :
+  forall (t : T), 0 < triangle_area t.
 
 Definition edges_tr (t : T) : {ffun 'I_3 -> E} :=
   [ffun i : 'I_3 => [ffun j : 'I_2 => if val j == 0%N then t i else t (i + 1)]].
@@ -94,15 +116,13 @@ Lemma common_points (t1 t2 : T) :
   t1 i = t2 (j + 1) -> t1 (i + 1) = t2 j -> ~ point_in (t2 (j + 1 + 1)) t1.
 Proof.
 move => i j h1 h2.
-Admitted.
+rewrite /point_in.
+move /existsP => h3.
+destruct h3 as [x].
+move : H.
+case : x.
 
-Lemma elimI3 (P' : 'I_3 -> Prop): P' 0 -> P' 1 -> P' (1 + 1) -> forall i, P' i.
-Proof.
-move=> p0 p1 p2 [[ | [ | [ | ?]]] ci] //.
-    by have /eqP -> : Ordinal ci == 0.
-  by have /eqP -> : Ordinal ci == 1.
-by have /eqP -> : Ordinal ci == (1 + 1).
-Qed.
+Admitted.
 
 Lemma p1p1p1_I3 : 
   forall (i : 'I_3), (i + 1 + 1 + 1 : 'I_3) = i.
@@ -140,10 +160,11 @@ Qed.
 
 Variable tr : triangulation [finType of T].
 
-(* à prouver *)
-Hypothesis unique_edge :
-  forall (t : T) (e : E), t \in (enum tr) -> (edge_in e t) -> 
+Lemma unique_edge :
+  forall (t : T) (e : E), (t \in (enum tr)) -> (edge_in e t) -> 
     forall (t' : T), t != t' -> ~ (edge_in e t').
+Proof.
+Admitted.
 
 Fixpoint find_triangle_in_list (p : T -> bool) (tr_enum : list T) : option T :=
   match tr_enum with
@@ -235,9 +256,6 @@ Qed.
 
 Variable target_pt : P.
 
-Definition triangle_area (t : T) :=
-  tr_area R (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))).
-
 Lemma starter_pt_triangle_area (i : 'I_3) (t : T) :
   triangle_area t = tr_area R (coords (t i)) (coords (t (i +1))) (coords (t (i + 1 + 1))).
 Proof.
@@ -247,9 +265,6 @@ apply : elimI3.
   by rewrite p1p11 (inv_cycle_tr_area R).
 by rewrite p1p11 p10 -(inv_cycle_tr_area R).
 Qed.
-
-Hypothesis tr_orientation :
-  forall (t : T), 0 < triangle_area t.
 
 Definition is_separating_edge (t : T) (i : 'I_3) :=
   0 < tr_area R (coords (t i)) (coords target_pt) (coords (t (i + 1))).
@@ -472,6 +487,7 @@ apply: (power_decrease R).
 rewrite -(starter_pt_dist i t1).
 by apply: is_Delaunay_tr.
 Qed.
+
 
 
 
