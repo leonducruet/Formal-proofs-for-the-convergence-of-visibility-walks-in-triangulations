@@ -69,14 +69,25 @@ Qed.
 Lemma flipl_tr_area (A B C : R * R) :
   tr_area A B C = - tr_area B A C.
 Proof.
-move: A B C.
-move => [a_x a_y][b_x b_y][c_x c_y].
+by rewrite inv_cycle_tr_area flipr_tr_area -(inv_cycle_tr_area).
+Qed.
+
+Lemma dupl_tr_area (A B : R * R) :
+  tr_area A A B = 0.
+move: A B.
+move => [a_x a_y][b_x b_y].
 rewrite /tr_area.
 repeat rewrite (expand_det_col _ ord0) /cofactor /row' /col' !big_ord_recr
    big_ord0 /= add0r !(mxE, ffunE, addn0, expr0, expr1, expr2, mxE, ffunE, 
    det_mx00, mul1r, mulNr, mulrN, opprK, mulr1, addrA) /=.
 rewrite /pt_norm.
 by mc_ring.
+Qed.
+
+Lemma dupr_tr_area (A B : R * R) :
+  tr_area A B B = 0.
+rewrite -inv_cycle_tr_area.
+by apply : dupl_tr_area.
 Qed.
 
 Definition out_circle (A B C D : R * R) :=
