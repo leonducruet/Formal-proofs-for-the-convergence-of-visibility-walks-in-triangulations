@@ -8,7 +8,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Import Num.Theory.
+Import Num.Theory GRing.Theory.
 
 Section implementation.
 
@@ -17,9 +17,6 @@ Variable R : realFieldType.
 Variable P : finType.
 
 Variable coords : P -> R * R.
-
-(* Hypothesis inj_coords : 
-  forall (p1 p2 : P), (coords p1) == (coords p2) -> p1 == p2. *)
 
 Definition E := {ffun 'I_2 -> P}.
 
@@ -55,13 +52,9 @@ Qed.
 
 Definition T := {ffun 'I_3 -> P}.
 
-(*
-1/ pqr -> qrp
-2/ pqr -> ~ prq
-3/ p!=q -> q!=r -> p!=r -> pqr \/ prq
-4/ tqr /\ ptr /\ pqt -> pqr
-5/ tsp /\ tsq /\ tsr /\ tpq /\ tqr -> tpr 
-*)
+Definition t_make (p0 p1 p2 : P) : T :=
+  [ffun i : 'I_3 => 
+    if val i == 0%nat then p0 else if val i == 1%nat then p1 else p2].
 
 Hypothesis inj_triangles : 
   forall (t : T), forall (i j : 'I_3), (t i) == (t j) -> i == j.
@@ -69,8 +62,14 @@ Hypothesis inj_triangles :
 Definition triangle_area (t : T) :=
   tr_area R (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))).
 
+Variable tr : triangulation [finType of T].
+
 Hypothesis tr_orientation :
-  forall (t : T), 0 < triangle_area t.
+  forall (t : T), t \in (enum tr) -> 0 < triangle_area t.
+
+Hypothesis tr_triangulation :
+  forall (t t' : T) (i j : 'I_3),
+  t \in (enum tr) -> t' \in (enum tr) -> t i == t' j -> t (i + 1) == t' (j + 1) -> t == t'.
 
 Definition edges_tr (t : T) : {ffun 'I_3 -> E} :=
   [ffun i : 'I_3 => [ffun j : 'I_2 => if val j == 0%N then t i else t (i + 1)]].
@@ -111,25 +110,6 @@ rewrite /edge_in.
 by apply : exists_eqP.
 Qed.
 
-Lemma common_points (t1 t2 : T) :
-  forall (i j : 'I_3), 
-  t1 i = t2 (j + 1) -> t1 (i + 1) = t2 j -> ~ point_in (t2 (j + 1 + 1)) t1.
-Proof.
-move => i j h1 h2.
-rewrite /point_in.
-move /existsP => h3.
-destruct h3 as [x].
-move : H.
-case : x.
-
-Admitted.
-
-Lemma p1p1p1_I3 : 
-  forall (i : 'I_3), (i + 1 + 1 + 1 : 'I_3) = i.
-Proof.
-apply: elimI3; by apply /eqP.
-Qed.
-
 Lemma p10 : (0 + 1 : 'I_3) = 1.
 Proof.
 by [].
@@ -145,6 +125,55 @@ Proof.
 by apply /eqP.
 Qed.
 
+Lemma starter_pt_triangle_area (i : 'I_3) (t : T) :
+  triangle_area t = tr_area R (coords (t i)) (coords (t (i +1))) (coords (t (i + 1 + 1))).
+Proof.
+move: i.
+apply : elimI3.
+    by rewrite p10 p1p10.
+  by rewrite p1p11 (inv_cycle_tr_area R).
+by rewrite p1p11 p10 -(inv_cycle_tr_area R).
+Qed.
+
+Lemma triangle_area_no_dup (t : T) (i : 'I_3):
+  t i = t (i + 1) -> triangle_area t = 0.
+Proof.
+move => abs.
+by rewrite (starter_pt_triangle_area i) abs dupl_tr_area.
+Qed.
+
+Lemma common_points (t1 t2 : T) :
+  forall (i j : 'I_3),  t1 \in (enum tr) -> t2 \in (enum tr) -> 
+  t1 i = t2 (j + 1) -> t1 (i + 1) = t2 j -> ~ point_in (t2 (j + 1 + 1)) t1.
+Proof.
+move => i j t1_in t2_in h1 h2.
+rewrite /point_in.
+move /existsP => [] x.
+rewrite -(subrK i x).
+elim/elimI3: (x - i).
+    rewrite add0r h1 => /eqP h3.
+    have := tr_orientation t2_in.
+    rewrite (triangle_area_no_dup h3).
+    by rewrite Order.POrderTheory.ltxx.
+  rewrite addrC h2 eq_sym -[X in (_ == t2 X)]addr0 -p1p11 !addrA=> /eqP h3. 
+  have := tr_orientation t2_in.
+  rewrite (triangle_area_no_dup h3).
+  by rewrite Order.POrderTheory.ltxx.
+rewrite addrC addrA => /eqP h3.
+have := tr_orientation t1_in.
+rewrite (starter_pt_triangle_area i) h1 h2 h3 -(inv_cycle_tr_area R) 
+  (flipr_tr_area R) -(starter_pt_triangle_area j) oppr_gt0.
+rewrite Order.POrderTheory.lt_gtF.
+  by [].
+by apply: (tr_orientation t2_in).
+Qed.
+
+Lemma p1p1p1_I3 : 
+  forall (i : 'I_3), (i + 1 + 1 + 1 : 'I_3) = i.
+Proof.
+apply: elimI3; by apply /eqP.
+Qed.
+
 Definition tr_dist (t : T) (p : P) :=
   out_circle R (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))) (coords p).
 
@@ -158,13 +187,32 @@ apply : elimI3.
 by rewrite p1p11 p10 -(inv_cycle_out_circle R).
 Qed.
 
-Variable tr : triangulation [finType of T].
-
 Lemma unique_edge :
   forall (t : T) (e : E), (t \in (enum tr)) -> (edge_in e t) -> 
-    forall (t' : T), t != t' -> ~ (edge_in e t').
+    forall (t' : T), (t' \in (enum tr)) -> t' != t -> ~ (edge_in e t').
 Proof.
-Admitted.
+move => t e t_in.
+rewrite /edge_in.
+move /existsP => [] i.
+move /eqP => h1.
+move => t' t'_in h2.
+move /existsP => [] j.
+move /eqP.
+rewrite -h1 /edges_tr !ffunE.
+move /ffunP => H.
+move : (H 0).
+rewrite !ffunE /=.
+move: (H 1).
+rewrite !ffunE /=.
+move /eqP => H1.
+move /eqP => H2.
+have aux : t' = t.
+  apply /eqP.
+  by rewrite (tr_triangulation t'_in t_in H2 H1).
+rewrite -aux in h2.
+move : h2.
+by rewrite eq_refl.
+Qed.
 
 Fixpoint find_triangle_in_list (p : T -> bool) (tr_enum : list T) : option T :=
   match tr_enum with
@@ -202,11 +250,11 @@ by split.
 Qed.
 
 Lemma unique_result (p : T -> bool) (tr_enum : list T) :
-  forall (t1 : T),
-  (p t1) -> (forall (t2 : T), t1 != t2 -> ~ (p t2)) ->
+  forall (t1 : T),   
+  (p t1) -> (forall (t2 : T), (t2 \in (tr_enum)) ->  t2 != t1 -> ~ (p t2)) ->
     (find_triangle_in_list p (tr_enum) = Some t1) \/ ~~ (t1 \in tr_enum).
 Proof.
-move => t1 h1 h2.
+move => t1 h0.
 elim : tr_enum.
   right.
   by rewrite in_nil.
@@ -216,22 +264,34 @@ move => a_eq_t1_bool HR.
   left.
   have a_eq_t1 : t1 = a.
     by apply /eqP.
-  by rewrite -a_eq_t1 /find_triangle_in_list h1.
+  by rewrite -a_eq_t1 /find_triangle_in_list h0.
 move => a_diff_t1_bool HR.
 have a_diff_t1 : t1 != a.
     by rewrite a_diff_t1_bool.
 case_eq (p a).
+  move => h1 h2.
   have not_pa : ~ p a.
-    by apply: h2.
-  move => not_pa2.
+    apply: h2.
+      by rewrite in_cons eq_refl.
+    by rewrite eq_sym.
   move : not_pa.
-  by rewrite not_pa2.
-move => npa.
+  by rewrite h1.
+move => npa H.
 rewrite /find_triangle_in_list npa.
 have not_in (x y : T) (s : list T) : ((x == y) = false) -> ((x \in y :: s) = (x \in s)).
   move => H1.
   by rewrite in_cons H1 /=.
-by rewrite (not_in t1 a l a_diff_t1_bool).
+rewrite (not_in t1 a l a_diff_t1_bool).
+apply : HR.
+move => t2.
+case_eq (t2 == a).
+  move => t2a h1 h2.
+  have ta : t2 = a.
+    by apply /eqP.
+  by rewrite ta npa.
+move => nta.
+rewrite -(not_in t2 a l nta).
+by apply: H.
 Qed.
 
 Definition find_triangle_of_edge (e : E) : option T :=
@@ -245,8 +305,8 @@ split.
   by apply: correc_find_triangle_in_list.
 move => H.
 destruct H as [H1 H2].
-have uni_edge : forall (t' : T), t != t' -> ~ (edge_in e t').
-  by apply: unique_edge.
+have uni_edge : forall (t' : T), (t' \in (enum tr)) -> t' != t -> ~ (edge_in e t').
+  by apply: unique_edge H2 H1. 
 have aux : (find_triangle_in_list (edge_in e) (enum tr) = Some t) \/ (~~ (t \in (enum tr))).
   by apply: unique_result.
 rewrite H2 /= in aux.
@@ -255,16 +315,6 @@ by destruct aux.
 Qed.
 
 Variable target_pt : P.
-
-Lemma starter_pt_triangle_area (i : 'I_3) (t : T) :
-  triangle_area t = tr_area R (coords (t i)) (coords (t (i +1))) (coords (t (i + 1 + 1))).
-Proof.
-move: i.
-apply : elimI3.
-    by rewrite p10 p1p10.
-  by rewrite p1p11 (inv_cycle_tr_area R).
-by rewrite p1p11 p10 -(inv_cycle_tr_area R).
-Qed.
 
 Definition is_separating_edge (t : T) (i : 'I_3) :=
   0 < tr_area R (coords (t i)) (coords target_pt) (coords (t (i + 1))).
@@ -420,15 +470,15 @@ by rewrite p1p11 p10 -(inv_cycle_power R).
 Qed.
 
 Hypothesis is_Delaunay_tr :
-  forall (t1 t2 : T) (i : 'I_3), (* t1 \in tr -> t2 \in tr -> *)
+  forall (t1 t2 : T) (i : 'I_3), t1 \in (enum tr) -> t2 \in (enum tr) ->
   ( ~ point_in (t2 i) t1) -> 0 < tr_dist t1 (t2 i).
 
 Lemma decrease_condition :
-  forall (e : E) (t t' : T), 
+  forall (e : E) (t t' : T), (t \in enum tr) -> (t' \in enum tr) -> 
   separating_edge t = Some e -> 
     find_triangle_of_edge (oppos_edge e) = Some t' -> walk_lt R [finType of T] triangle_measure t' t.
 Proof.
-move => e t1 t2 h1 h2.
+move => e t1 t2 t1_tr t2_tr h1 h2.
 have neighbours : exists (i j : 'I_3), 
   (t1 i = t2 (j + 1)) /\ (t1 (i + 1) = t2 j) /\ 
   (is_separating_edge t1 i) /\ ~ point_in (t2 (j + 1 + 1)) t1.
@@ -461,6 +511,8 @@ have neighbours : exists (i j : 'I_3),
   have diff_point :
     ~ point_in (t2 (j + 1 + 1)) t1.
     apply: common_points.
+          by [].
+        by [].
       by rewrite H0.
     by rewrite H1.
     rewrite /edge_in.
@@ -488,7 +540,7 @@ rewrite -(starter_pt_dist i t1).
 by apply: is_Delaunay_tr.
 Qed.
 
-
+End implementation.
 
 
 
