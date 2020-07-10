@@ -59,6 +59,9 @@ Hypothesis positive_measure :
 Definition walk_lt (t1 t2 : T) : Prop := 
   triangle_measure t1 < triangle_measure t2.
 
+Definition walk_lt' (t1 t2 : {t : T | t \in tr}) : Prop := 
+  triangle_measure (proj1_sig t1) < triangle_measure (proj1_sig t2).
+
 Lemma walk_lt_trans : 
   forall (t1 t2 t3 : T),
   walk_lt t1 t2 -> walk_lt t2 t3 -> walk_lt t1 t3.
@@ -76,18 +79,33 @@ move => t.
 by rewrite ltxx.
 Qed.
 
-Instance walk_lt_wf : WellFounded walk_lt.
+Lemma walk_lt_well_founded : well_founded walk_lt.
 Proof.
-rewrite /WellFounded.
 apply: wf_rel.
 apply: walk_lt_trans.
 by apply: walk_lt_anti_refl.
 Qed.
 
+Instance walk_lt_wf : WellFounded walk_lt.
+Proof.
+rewrite /WellFounded; apply walk_lt_well_founded.
+Qed.
+
+Instance walk'_lt_wf : WellFounded walk_lt'.
+Proof.
+rewrite /WellFounded.
+apply (Inverse_Image.wf_inverse_image _ T walk_lt).
+apply walk_lt_well_founded.
+Qed.
+
 Hypothesis decrease_condition :
   forall (e : E) (t t' : T),
+  t \in tr ->
   separating_edge t = Some e -> 
     find_triangle_of_edge (opposite_edge e) = Some t' -> walk_lt t' t.
+
+Hypothesis invariant_find_triangle_of_edge : forall (e : E) (t : T),
+   find_triangle_of_edge e = Some t -> t \in tr.
 
 Definition separating_inspect (t : T) :
   {e' : option E | separating_edge t = e'} :=
@@ -97,19 +115,37 @@ Definition find_triangle_inspect (e : E) :
   {t' : option T | find_triangle_of_edge e = t'} :=
   exist _ (find_triangle_of_edge e) erefl.
 
-Equations walk (current_triangle : T) 
+Equations walk (current_triangle : {t : T | t \in tr})
+   : T + E by wf (current_triangle) walk_lt' :=
+walk current_triangle with
+    separating_inspect (proj1_sig current_triangle) => { 
+     | exist _ (Some edge) eq1
+       with find_triangle_inspect (opposite_edge edge) => {
+          | exist _ (Some new_triangle) eq2 :=
+            walk
+              (exist _ new_triangle
+                 (invariant_find_triangle_of_edge _ _ eq2));
+          | exist _ None eq2 := inr (opposite_edge edge)};
+     | exist _ None eq1 := inl (proj1_sig (current_triangle))}.
+Next Obligation.
+rewrite /walk_lt' /=; apply: (decrease_condition edge) => //.
+Qed.
+
+(*
+Equations walk (current_triangle : T) (h : current_triangle \in tr)
    : T + E by wf (current_triangle) walk_lt :=
 walk current_triangle with
     separating_inspect current_triangle => { 
      | exist _ (Some edge) eq1
        with find_triangle_inspect (opposite_edge edge) => {
           | exist _ (Some new_triangle) eq2 :=
-             walk new_triangle;
+             walk new_triangle _ (invariant_find_triangle_of_edge _ _ eq2);
           | exist _ None eq2 := inr (opposite_edge edge)};
      | exist _ None eq1 := inl (current_triangle)}.
+*)
 
 Lemma walk_result_edge :
-  forall (e : E) (t : T),
+  forall (e : E) (t : {t : T | t \in tr}),
   walk t = inr e -> (exists (t1 : T), edge_in (opposite_edge e) t1) /\
     (forall (t2 : T), ~~ edge_in e t2).
 Proof.
@@ -120,7 +156,7 @@ move => e t h; funelim (walk t); rewrite h in Heqcall.
 move: Heqcall=> [heq].
 split.
   rewrite -heq involution_opposite_edge.
-  exists current_triangle.
+  exists (proj1_sig current_triangle).
   by apply: separating_edge_in_triangle e.
 move => t2.
 apply /negP => /correction_find_triangle.
@@ -128,7 +164,7 @@ by rewrite -heq e0.
 Qed.
 
 Lemma walk_result_triangle :
-  forall (t1 t2 : T),
+  forall (t1 : {t : T | t \in tr}) (t2 : T),
   walk t1 = inl t2 -> target_in t2.
 Proof.
 move => t1 t2 h; funelim (walk t1); rewrite h in Heqcall.
