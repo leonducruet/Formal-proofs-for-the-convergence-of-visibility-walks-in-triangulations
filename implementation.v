@@ -314,6 +314,17 @@ rewrite /find_triangle_of_edge.
 by destruct aux.
 Qed.
 
+Lemma invariant_find_triangle_of_edge :
+  forall (e : E) (t : T),
+    find_triangle_of_edge e = Some t -> t \in enum tr.
+move => e t.
+have aux : (edge_in e t) /\ (t \in enum tr) -> t \in enum tr.
+  by move => [H1 H2].
+move => h.
+apply: aux.
+by apply (correc_find_triangle e t).
+Qed.
+
 Variable target_pt : P.
 
 Definition is_separating_edge (t : T) (i : 'I_3) :=
@@ -474,11 +485,18 @@ Hypothesis is_Delaunay_tr :
   ( ~ point_in (t2 i) t1) -> 0 < tr_dist t1 (t2 i).
 
 Lemma decrease_condition :
-  forall (e : E) (t t' : T), (t \in enum tr) -> (t' \in enum tr) -> 
+  forall (e : E) (t t' : T), (t \in enum tr) -> 
   separating_edge t = Some e -> 
     find_triangle_of_edge (oppos_edge e) = Some t' -> walk_lt R [finType of T] triangle_measure t' t.
 Proof.
-move => e t1 t2 t1_tr t2_tr h1 h2.
+move => e t1 t2 t1_tr h1 h2.
+have t2_tr : t2 \in enum tr.
+  have aux : (edge_in (oppos_edge e) t2) /\ (t2 \in (enum tr)) -> (t2 \in enum tr).
+    move => H.
+    by destruct H as [H1 H2].
+  apply: aux.
+  rewrite -correc_find_triangle.
+  by apply: h2.
 have neighbours : exists (i j : 'I_3), 
   (t1 i = t2 (j + 1)) /\ (t1 (i + 1) = t2 j) /\ 
   (is_separating_edge t1 i) /\ ~ point_in (t2 (j + 1 + 1)) t1.
@@ -490,7 +508,7 @@ have neighbours : exists (i j : 'I_3),
     have aux : (edge_in (oppos_edge e) t2) /\ (t2 \in (enum tr)) -> edge_in (oppos_edge e) t2.
       move => H.
       by destruct H as [H1 H2].
-    apply: aux.  
+    apply: aux. 
     rewrite -correc_find_triangle.
     by apply: h2.
   destruct e_in_t1 as [i].
@@ -538,6 +556,31 @@ apply: (power_decrease R).
   by apply: H3.
 rewrite -(starter_pt_dist i t1).
 by apply: is_Delaunay_tr.
+Qed.
+
+Definition walk_impl :=
+  walk R [finType of E] [finType of T] edge_in tr
+ oppos_edge separating_edge
+  find_triangle_of_edge correc_find_triangle triangle_measure decrease_condition.
+
+Lemma walk_impl_result_edge :
+  forall (e : E) (t : {t : T | t \in enum tr}),
+  walk_impl t = inr e -> (exists (t1 : T), edge_in (oppos_edge e) t1) /\
+    (forall (t2 : T), t2 \in enum tr -> ~~ edge_in e t2).
+Proof.
+apply: walk_result_edge.
+apply: inv_oppos_edge.
+apply: separating_edge_in_triangle.
+Qed.
+
+Definition target_in_impl :=
+  target_in [finType of E] [finType of T] separating_edge.
+
+Lemma walk_impl_result_triangle :
+  forall (t1 : {t : T | t \in enum tr}) (t2 : T),
+  walk_impl t1 = inl t2 -> target_in_impl t2.
+Proof.
+by apply: walk_result_triangle.
 Qed.
 
 End implementation.
