@@ -65,11 +65,11 @@ Definition triangle_area (t : T) :=
 Variable tr : triangulation [finType of T].
 
 Hypothesis tr_orientation :
-  forall (t : T), t \in (enum tr) -> 0 < triangle_area t.
+  forall (t : T), t \in tr -> 0 < triangle_area t.
 
 Hypothesis tr_triangulation :
   forall (t t' : T) (i j : 'I_3),
-  t \in (enum tr) -> t' \in (enum tr) -> t i == t' j -> t (i + 1) == t' (j + 1) -> t == t'.
+  t \in tr -> t' \in tr -> t i == t' j -> t (i + 1) == t' (j + 1) -> t == t'.
 
 Definition edges_tr (t : T) : {ffun 'I_3 -> E} :=
   [ffun i : 'I_3 => [ffun j : 'I_2 => if val j == 0%N then t i else t (i + 1)]].
@@ -143,7 +143,7 @@ by rewrite (starter_pt_triangle_area i) abs dupl_tr_area.
 Qed.
 
 Lemma common_points (t1 t2 : T) :
-  forall (i j : 'I_3),  t1 \in (enum tr) -> t2 \in (enum tr) -> 
+  forall (i j : 'I_3),  t1 \in tr -> t2 \in tr -> 
   t1 i = t2 (j + 1) -> t1 (i + 1) = t2 j -> ~ point_in (t2 (j + 1 + 1)) t1.
 Proof.
 move => i j t1_in t2_in h1 h2.
@@ -188,8 +188,8 @@ by rewrite p1p11 p10 -(inv_cycle_out_circle R).
 Qed.
 
 Lemma unique_edge :
-  forall (t : T) (e : E), (t \in (enum tr)) -> (edge_in e t) -> 
-    forall (t' : T), (t' \in (enum tr)) -> t' != t -> ~ (edge_in e t').
+  forall (t : T) (e : E), (t \in tr) -> (edge_in e t) -> 
+    forall (t' : T), (t' \in tr) -> t' != t -> ~ (edge_in e t').
 Proof.
 move => t e t_in.
 rewrite /edge_in.
@@ -298,17 +298,21 @@ Definition find_triangle_of_edge (e : E) : option T :=
   find_triangle_in_list (edge_in e) (enum tr).
 
 Lemma correc_find_triangle (e : E) (t : T) :
-  find_triangle_of_edge e = Some t <-> (edge_in e t) /\ (t \in (enum tr)).
+  find_triangle_of_edge e = Some t <-> (edge_in e t) /\ (t \in tr).
 Proof.
 split.
   rewrite /find_triangle_of_edge.
-  by apply: correc_find_triangle_in_list.
+  move=> /correc_find_triangle_in_list [] -> tenum.
+  by rewrite -(set_enum tr) inE.
 move => H.
 destruct H as [H1 H2].
-have uni_edge : forall (t' : T), (t' \in (enum tr)) -> t' != t -> ~ (edge_in e t').
+have uni_edge : forall (t' : T), (t' \in tr) -> t' != t -> ~ (edge_in e t').
   by apply: unique_edge H2 H1. 
-have aux : (find_triangle_in_list (edge_in e) (enum tr) = Some t) \/ (~~ (t \in (enum tr))).
-  by apply: unique_result.
+have aux : (find_triangle_in_list (edge_in e) (enum tr) = Some t) \/ (~~ (t \in tr)).
+  rewrite (_ : (t \notin tr) = (t \notin (enum tr))); last first.
+    by rewrite -[in LHS](set_enum tr) inE.
+  apply: unique_result => //.
+  by move=> t2 t2in t2nt; apply: uni_edge=> //; rewrite -(set_enum tr) inE.
 rewrite H2 /= in aux.
 rewrite /find_triangle_of_edge.
 by destruct aux.
@@ -316,9 +320,9 @@ Qed.
 
 Lemma invariant_find_triangle_of_edge :
   forall (e : E) (t : T),
-    find_triangle_of_edge e = Some t -> t \in enum tr.
+    find_triangle_of_edge e = Some t -> t \in tr.
 move => e t.
-have aux : (edge_in e t) /\ (t \in enum tr) -> t \in enum tr.
+have aux : (edge_in e t) /\ (t \in tr) -> t \in tr.
   by move => [H1 H2].
 move => h.
 apply: aux.
@@ -481,17 +485,17 @@ by rewrite p1p11 p10 -(inv_cycle_power R).
 Qed.
 
 Hypothesis is_Delaunay_tr :
-  forall (t1 t2 : T) (i : 'I_3), t1 \in (enum tr) -> t2 \in (enum tr) ->
+  forall (t1 t2 : T) (i : 'I_3), t1 \in tr -> t2 \in tr ->
   ( ~ point_in (t2 i) t1) -> 0 < tr_dist t1 (t2 i).
 
 Lemma decrease_condition :
-  forall (e : E) (t t' : T), (t \in enum tr) -> 
+  forall (e : E) (t t' : T), (t \in tr) -> 
   separating_edge t = Some e -> 
     find_triangle_of_edge (oppos_edge e) = Some t' -> walk_lt R [finType of T] triangle_measure t' t.
 Proof.
 move => e t1 t2 t1_tr h1 h2.
-have t2_tr : t2 \in enum tr.
-  have aux : (edge_in (oppos_edge e) t2) /\ (t2 \in (enum tr)) -> (t2 \in enum tr).
+have t2_tr : t2 \in tr.
+  have aux : (edge_in (oppos_edge e) t2) /\ (t2 \in tr) -> (t2 \in tr).
     move => H.
     by destruct H as [H1 H2].
   apply: aux.
@@ -505,7 +509,7 @@ have neighbours : exists (i j : 'I_3),
     by apply: separating_edge_in_triangle h1.
   have oppos_e_in_t2: exists (i : 'I_3), edges_tr t2 i = oppos_edge e.
     apply: edge_in_exists.
-    have aux : (edge_in (oppos_edge e) t2) /\ (t2 \in (enum tr)) -> edge_in (oppos_edge e) t2.
+    have aux : (edge_in (oppos_edge e) t2) /\ (t2 \in tr) -> edge_in (oppos_edge e) t2.
       move => H.
       by destruct H as [H1 H2].
     apply: aux. 
@@ -564,9 +568,9 @@ Definition walk_impl :=
   find_triangle_of_edge correc_find_triangle triangle_measure decrease_condition.
 
 Lemma walk_impl_result_edge :
-  forall (e : E) (t : {t : T | t \in enum tr}),
+  forall (e : E) (t : {t : T | t \in tr}),
   walk_impl t = inr e -> (exists (t1 : T), edge_in (oppos_edge e) t1) /\
-    (forall (t2 : T), t2 \in enum tr -> ~~ edge_in e t2).
+    (forall (t2 : T), t2 \in tr -> ~~ edge_in e t2).
 Proof.
 apply: walk_result_edge.
 apply: inv_oppos_edge.
@@ -577,7 +581,7 @@ Definition target_in_impl :=
   target_in [finType of E] [finType of T] separating_edge.
 
 Lemma walk_impl_result_triangle :
-  forall (t1 : {t : T | t \in enum tr}) (t2 : T),
+  forall (t1 : {t : T | t \in tr}) (t2 : T),
   walk_impl t1 = inl t2 -> target_in_impl t2.
 Proof.
 by apply: walk_result_triangle.

@@ -49,21 +49,16 @@ Variable find_triangle_of_edge : E -> option T.
 
 Hypothesis correction_find_triangle :
   forall (e : E) (t : T),
-  find_triangle_of_edge e = Some t <-> (edge_in e t) /\ (t \in enum tr).
+  find_triangle_of_edge e = Some t <-> (edge_in e t) /\ (t \in tr).
 
 Lemma invariant_find_triangle_of_edge : forall (e : E) (t : T),
-   find_triangle_of_edge e = Some t -> t \in enum tr.
+   find_triangle_of_edge e = Some t -> t \in tr.
 Proof.
-move => e t.
-have aux : (edge_in e t) /\ (t \in enum tr) -> t \in enum tr.
-  by move => [H1 H2].
-move => h.
-apply: aux.
-by apply (correction_find_triangle e t).
+by move => e t; rewrite correction_find_triangle; case.
 Qed.
 
 Lemma edge_in_find_triangle_of_edge : forall (e : E) (t : T),
-   t \in enum tr -> 
+   t \in tr -> 
    (edge_in e t -> find_triangle_of_edge e = Some t).
 Proof.
 move => e t h1 h2.
@@ -75,7 +70,7 @@ Variable triangle_measure : T -> R.
 Definition walk_lt (t1 t2 : T) : Prop := 
   triangle_measure t1 < triangle_measure t2.
 
-Definition walk_lt' (t1 t2 : {t : T | t \in enum tr}) : Prop := 
+Definition walk_lt' (t1 t2 : {t : T | t \in tr}) : Prop := 
   triangle_measure (proj1_sig t1) < triangle_measure (proj1_sig t2).
 
 Lemma walk_lt_trans : 
@@ -116,7 +111,7 @@ Qed.
 
 Hypothesis decrease_condition :
   forall (e : E) (t t' : T),
-  t \in enum tr ->
+  t \in tr ->
   separating_edge t = Some e -> 
     find_triangle_of_edge (opposite_edge e) = Some t' -> walk_lt t' t.
 
@@ -128,7 +123,7 @@ Definition find_triangle_inspect (e : E) :
   {t' : option T | find_triangle_of_edge e = t'} :=
   exist _ (find_triangle_of_edge e) erefl.
 
-Equations walk (current_triangle : {t : T | t \in enum tr})
+Equations walk (current_triangle : {t : T | t \in tr})
    : T + E by wf (current_triangle) walk_lt' :=
 walk current_triangle with
     separating_inspect (proj1_sig current_triangle) => { 
@@ -145,33 +140,33 @@ rewrite /walk_lt' /=; apply: (decrease_condition edge) => //.
 Qed.
 
 Lemma walk_result_edge :
-  forall (e : E) (t : {t : T | t \in enum tr}),
+  forall (e : E) (t : {t : T | t \in tr}),
   walk t = inr e -> (exists (t1 : T), edge_in (opposite_edge e) t1) /\
-    (forall (t2 : T), t2 \in enum tr -> ~~ edge_in e t2).
+    (forall (t2 : T), t2 \in tr -> ~~ edge_in e t2).
 Proof.
 move => e t h; funelim (walk t); rewrite h in Heqcall.
     by [].
   move: Heqcall.
-  by apply: (H e1).
+  by apply: (H e).
 move: Heqcall=> [heq].
 split.
   rewrite -heq involution_opposite_edge.
   exists (proj1_sig current_triangle).
-  by apply: separating_edge_in_triangle e.
+  by apply: separating_edge_in_triangle eq1.
 move => t2 h2.
-apply /negP => /(edge_in_find_triangle_of_edge e1 t2 h2).
-by rewrite -heq e0.
+apply /negP => /(edge_in_find_triangle_of_edge e t2 h2).
+by rewrite -heq eq2.
 Qed.
 
 Lemma walk_result_triangle :
-  forall (t1 : {t : T | t \in enum tr}) (t2 : T),
+  forall (t1 : {t : T | t \in tr}) (t2 : T),
   walk t1 = inl t2 -> target_in t2.
 Proof.
 move => t1 t2 h; funelim (walk t1); rewrite h in Heqcall.
     move: Heqcall => [heq].
     rewrite -heq /target_in.
     apply/eqP.
-    by apply: e.
+    by apply: eq1.
   by apply: H Heqcall.
 by [].
 Qed.
