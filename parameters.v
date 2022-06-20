@@ -124,7 +124,7 @@ Definition find_triangle_inspect (e : E) :
   exist _ (find_triangle_of_edge e) erefl.
 
 Equations walk (current_triangle : {t : T | t \in tr})
-   : T + E by wf (current_triangle) walk_lt' :=
+   : T + E by wf current_triangle walk_lt' :=
 walk current_triangle with
     separating_inspect (proj1_sig current_triangle) => { 
      | exist _ (Some edge) eq1

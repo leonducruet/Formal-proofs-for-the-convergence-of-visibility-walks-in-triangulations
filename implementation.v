@@ -110,16 +110,6 @@ rewrite /edge_in.
 by apply : exists_eqP.
 Qed.
 
-Lemma p10 : (0 + 1 : 'I_3) = 1.
-Proof.
-by [].
-Qed.
-
-Lemma p1p10 : (0 + 1 + 1 : 'I_3) = (1 + 1).
-Proof.
-by [].
-Qed.
-
 Lemma p1p11 : (1 + 1 + 1 : 'I_3) = 0.
 Proof.
 by apply /eqP.
@@ -130,9 +120,9 @@ Lemma starter_pt_triangle_area (i : 'I_3) (t : T) :
 Proof.
 move: i.
 apply : elimI3.
-    by rewrite p10 p1p10.
+    by rewrite add0r.
   by rewrite p1p11 (inv_cycle_tr_area R).
-by rewrite p1p11 p10 -(inv_cycle_tr_area R).
+by rewrite p1p11 add0r -(inv_cycle_tr_area R).
 Qed.
 
 Lemma triangle_area_no_dup (t : T) (i : 'I_3):
@@ -182,9 +172,9 @@ Lemma starter_pt_dist (i : 'I_3) (t : T) (p : P) :
 Proof.
 move: i.
 apply : elimI3.
-    by rewrite p10 p1p10.
+    by rewrite add0r.
   by rewrite p1p11 (inv_cycle_out_circle R).
-by rewrite p1p11 p10 -(inv_cycle_out_circle R).
+by rewrite p1p11 add0r -(inv_cycle_out_circle R).
 Qed.
 
 Lemma unique_edge :
@@ -352,7 +342,7 @@ have with_i (t : T) :
   separating_edge_i t i = Some (edges_tr t i) -> is_separating_edge t i.
   rewrite /separating_edge_i.
   apply: elimI3.
-      rewrite !p10 !p1p10.
+      rewrite add0r.
       case: (is_separating_edge t 0).
         by [].
       case: (is_separating_edge t 1).
@@ -372,7 +362,7 @@ have with_i (t : T) :
       move /eqP.
       by apply: inj_edges_tr.
     by [].
-  rewrite p1p11 p10.
+  rewrite p1p11 add0r.
   case: (is_separating_edge t (1 + 1)).
     by [].
   case: (is_separating_edge t 0).
@@ -395,7 +385,7 @@ apply : elimI3.
     case : (is_separating_edge t 0).
       move /eqP.
       by move => /inj_edges_tr.
-    rewrite p10.
+    rewrite add0r.
     case: (is_separating_edge t 1).
       by [].
     case: (is_separating_edge t (1 + 1)).
@@ -426,7 +416,7 @@ have i_2 :
     separating_edge t = Some (edges_tr t (1 + 1)) -> 
       separating_edge_i t 1 = Some (edges_tr t (1 + 1)).
     rewrite /separating_edge /separating_edge_i.
-    rewrite p10.
+    rewrite add0r.
     case : (is_separating_edge t 0).
       move /eqP.
       by move => /inj_edges_tr.
@@ -479,9 +469,9 @@ Lemma starter_pt_measure (i : 'I_3) (t : T) (p : P) :
 Proof.
 move: i.
 apply : elimI3.
-    by rewrite p10.
+    by rewrite add0r.
   by rewrite p1p11 (inv_cycle_power R).
-by rewrite p1p11 p10 -(inv_cycle_power R).
+by rewrite p1p11 add0r -(inv_cycle_power R).
 Qed.
 
 Hypothesis is_Delaunay_tr :
