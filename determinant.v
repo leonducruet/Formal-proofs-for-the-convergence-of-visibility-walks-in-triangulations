@@ -104,20 +104,11 @@ Proof.
 by rewrite /power inv_cycle_out_circle inv_cycle_tr_area.
 Qed.
 
-Lemma out_circle_diff (A B C D E : R * R) :
-  out_circle A B C E * tr_area A D B - out_circle A D B E * tr_area A B C =
-    out_circle A B C D * tr_area A E B.
-Proof.
-move: A B C D E.
-move => [a_x a_y][b_x b_y][c_x c_y][d_x d_y][e_x e_y].
-by rewrite !poly_out_circle !poly_area; field.
-Qed.
-
 Lemma power_diff (A B C D E : R * R) :
   tr_area A B C != 0 ->
   tr_area A D B != 0 -> 
-  power A D B E - power A B C E =
-  power A D B C * tr_area A B E / tr_area A B C.
+  power A B C E - power A D B E =
+  -power A B C D * tr_area A B E / tr_area A D B.
 Proof.
 move: A B C D E.
 move => [a_x a_y][b_x b_y][c_x c_y][d_x d_y][e_x e_y].
@@ -133,23 +124,23 @@ Definition tr_measure (A B C : R * R) :=
 
 Lemma poly_measure (A B C : R * R) :
   tr_measure A B C = 
-A.1 * (B.2 * - (A.1 * A.1 + A.2 * A.2) - C.2 * - (A.1 * A.1 + A.2 * A.2)) -
-B.1 * (A.2 * - (A.1 * A.1 + A.2 * A.2) - C.2 * - (A.1 * A.1 + A.2 * A.2)) +
-C.1 * (A.2 * - (A.1 * A.1 + A.2 * A.2) - B.2 * - (A.1 * A.1 + A.2 * A.2)) +
+A.1 * (B.2 * - (A.1 * A.1 + A.2 * A.2) + C.2 * (A.1 * A.1 + A.2 * A.2)) -
+B.1 * (A.2 * - (A.1 * A.1 + A.2 * A.2) + C.2 * (A.1 * A.1 + A.2 * A.2)) +
+C.1 * (A.2 * - (A.1 * A.1 + A.2 * A.2) + B.2 * (A.1 * A.1 + A.2 * A.2)) +
 B.1 *
 (A.2 * (B.1 * B.1 + B.2 * B.2 - (C.1 * C.1 + C.2 * C.2)) -
  B.2 * (A.1 * A.1 + A.2 * A.2 - (C.1 * C.1 + C.2 * C.2)) +
  C.2 * (A.1 * A.1 + A.2 * A.2 - (B.1 * B.1 + B.2 * B.2))) -
 A.1 *
 (B.2 * (B.1 * B.1 + B.2 * B.2 - (C.1 * C.1 + C.2 * C.2)) -
- B.2 * - (C.1 * C.1 + C.2 * C.2) + C.2 * - (B.1 * B.1 + B.2 * B.2)) +
+ B.2 * - (C.1 * C.1 + C.2 * C.2) - C.2 * (B.1 * B.1 + B.2 * B.2)) +
 B.1 *
 (B.2 * (A.1 * A.1 + A.2 * A.2 - (C.1 * C.1 + C.2 * C.2)) -
- A.2 * - (C.1 * C.1 + C.2 * C.2) + C.2 * - (A.1 * A.1 + A.2 * A.2)) +
+ A.2 * - (C.1 * C.1 + C.2 * C.2) - C.2 * (A.1 * A.1 + A.2 * A.2)) +
 C.1 *
 (-(B.2 * (A.1 * A.1 + A.2 * A.2 - (B.1 * B.1 + B.2 * B.2)) -
-  A.2 * - (B.1 * B.1 + B.2 * B.2) + B.2 * - (A.1 * A.1 + A.2 * A.2))) +
-A.1 * (C.2 * (C.1 * C.1 + C.2 * C.2) + B.2 * - (C.1 * C.1 + C.2 * C.2)) -
+  A.2 * - (B.1 * B.1 + B.2 * B.2) - B.2 * (A.1 * A.1 + A.2 * A.2))) +
+A.1 * (C.2 * (C.1 * C.1 + C.2 * C.2) - B.2 * (C.1 * C.1 + C.2 * C.2)) -
 C.1 *
 (A.2 * (C.1 * C.1 + C.2 * C.2) - C.2 * (A.1 * A.1 + A.2 * A.2) +
  B.2 * (A.1 * A.1 + A.2 * A.2 - (C.1 * C.1 + C.2 * C.2))) +
@@ -202,41 +193,23 @@ Variable D : R * R.
 
 Variable E : R * R.
 
-Hypothesis ABC_lt0 : tr_area A B C > 0.
+Hypothesis ABC_gt0 : tr_area A B C > 0.
 
-Hypothesis ADB_lt0 : tr_area A D B > 0.
+Hypothesis ADB_gt0 : tr_area A D B > 0.
 
-Hypothesis AEB_lt0 : tr_area A E B > 0.
+Hypothesis AEB_gt0 : tr_area A E B > 0.
 
 Hypothesis delaunay : out_circle A B C D > 0.
 
 Lemma power_decrease : power A B C E - power A D B E > 0.
 Proof.
-
-have power_diff : 
-  (power A B C E - power A D B E) * tr_area A B C * tr_area A D B =
-    out_circle A B C D * tr_area A E B.
-  rewrite /power.
-  rewrite ?mulrBl mulfVK.
-  rewrite mulrAC mulfVK.
-  by apply: out_circle_diff.
-    by apply: lt0r_neq0 ADB_lt0.
-  by apply: lt0r_neq0 ABC_lt0.
-have mul_decrease : 
-  (power A B C E - power A D B E) * tr_area A B C * tr_area A D B > 0.
-  rewrite power_diff.
-  apply: mulr_gt0.
-    by apply: delaunay.
-  by apply: AEB_lt0.
-have step1 : (power A B C E - power A D B E) * tr_area A B C * tr_area A D B / tr_area A D B > 0.
-  by apply: divr_gt0 mul_decrease ADB_lt0.
-rewrite mulfK in step1.
-  have step2 : (power A B C E - power A D B E) * tr_area A B C / tr_area A B C > 0.
-    by apply: divr_gt0 step1 ABC_lt0.
-  rewrite mulfK in step2.
-    by apply: step2.
-  by apply: lt0r_neq0 ABC_lt0.
-by apply: lt0r_neq0 ADB_lt0.
+rewrite power_diff; first last.
+  by apply lt0r_neq0.
+  by apply lt0r_neq0.
+rewrite pmulr_rgt0; first by rewrite invr_gt0.
+rewrite nmulr_lgt0; last by rewrite flipr_tr_area oppr_lt0.
+rewrite oppr_lt0/power pmulr_lgt0//.
+by rewrite invr_gt0.
 Qed.
 
 End decrease.
