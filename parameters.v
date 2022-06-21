@@ -161,17 +161,19 @@ Lemma walk_result_triangle :
   forall (t1 : {t : T | t \in tr}) (t2 : T),
   walk t1 = inl t2 -> target_in t2.
 Proof.
-move => t1 t2 h; funelim (walk t1); rewrite h in Heqcall; last by[].
-  move: Heqcall => [heq].
-  rewrite -heq /target_in.
-  apply/eqP.
-  by apply: eq1.
-by apply: H Heqcall.
+move => t1 t2 h; funelim (walk t1); rewrite h in Heqcall; last by[];
+  last by apply: H Heqcall.
+move: Heqcall => [heq].
+rewrite -heq /target_in.
+apply/eqP.
+by apply: eq1.
 Qed.
 
 End delaunay_walk_parameters.
 
 Section non_delaunay_walk_parameters.
+
+
 
 End non_delaunay_walk_parameters.
 
