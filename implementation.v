@@ -3,24 +3,26 @@ From mathcomp Require Import all_ssreflect all_algebra.
 Require Import determinant.
 Require Import parameters.
 
-Import Num.Theory GRing.Theory.
-
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
+
+Import Num.Theory GRing.Theory.
+
+Close Scope order_scope.
 
 Section finite_lemmas.
 
 Lemma elimI2 (P' : 'I_2 -> Prop): P' 0 -> P' 1 -> forall i, P' i.
 Proof.
-move=> p0 p1 [[ | [ | [ | ?]]] ci] //.
+move=> p0 p1 [[|[|]] ci] //.
     by have /eqP -> : Ordinal ci == 0.
   by have /eqP -> : Ordinal ci == 1.
 Qed.
 
 Lemma elimI3 (P' : 'I_3 -> Prop): P' 0 -> P' 1 -> P' (1 + 1) -> forall i, P' i.
 Proof.
-move=> p0 p1 p2 [[ | [ | [ | ?]]] ci] //.
+move=> p0 p1 p2 [[|[|[|]]] ci] //.
     by have /eqP -> : Ordinal ci == 0.
   by have /eqP -> : Ordinal ci == 1.
 by have /eqP -> : Ordinal ci == (1 + 1).
@@ -76,15 +78,6 @@ Hypothesis inj_triangles :
 Definition triangle_area (t : T) :=
   tr_area R (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))).
 
-Variable tr : triangulation [finType of T].
-
-Hypothesis tr_orientation :
-  forall (t : T), t \in tr -> 0 < triangle_area t.
-
-Hypothesis tr_triangulation :
-  forall (t t' : T) (i j : 'I_3),
-  t \in tr -> t' \in tr -> t i == t' j -> t (i + 1) == t' (j + 1) -> t == t'.
-
 Definition edges_tr (t : T) : {ffun 'I_3 -> E} :=
   [ffun i : 'I_3 => [ffun j : 'I_2 => if val j == 0%N then t i else t (i + 1)]].
 
@@ -135,31 +128,6 @@ move => abs.
 by rewrite (starter_pt_triangle_area i) abs dupl_tr_area.
 Qed.
 
-Lemma common_points (t1 t2 : T) :
-  forall (i j : 'I_3),  t1 \in tr -> t2 \in tr -> 
-  t1 i = t2 (j + 1) -> t1 (i + 1) = t2 j -> ~ point_in (t2 (j + 1 + 1)) t1.
-Proof.
-move => i j t1_in t2_in h1 h2.
-rewrite /point_in.
-move /existsP => [] x.
-rewrite -(subrK i x).
-elim/elimI3: (x - i).
-    rewrite add0r h1 => /eqP h3.
-    have := tr_orientation t2_in.
-    rewrite (triangle_area_no_dup h3).
-    by rewrite Order.POrderTheory.ltxx.
-  rewrite addrC h2 eq_sym -[X in (_ == t2 X)]addr0 -p1p11 !addrA=> /eqP h3. 
-  have := tr_orientation t2_in.
-  rewrite (triangle_area_no_dup h3).
-  by rewrite Order.POrderTheory.ltxx.
-rewrite addrC addrA => /eqP h3.
-have := tr_orientation t1_in.
-rewrite (starter_pt_triangle_area i) h1 h2 h3 -(inv_cycle_tr_area R) 
-  (flipr_tr_area R) -(starter_pt_triangle_area j) oppr_gt0.
-rewrite Order.POrderTheory.lt_gtF; first by[].
-by apply: (tr_orientation t2_in).
-Qed.
-
 Definition tr_dist (t : T) (p : P) :=
   out_circle R (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))) (coords p).
 
@@ -172,32 +140,6 @@ apply : elimI3; first by rewrite add0r.
 by rewrite p1p11 add0r -(inv_cycle_out_circle R).
 Qed.
 
-Lemma unique_edge :
-  forall (t : T) (e : E), (t \in tr) -> (edge_in e t) -> 
-    forall (t' : T), (t' \in tr) -> t' != t -> ~ (edge_in e t').
-Proof.
-move => t e t_in.
-rewrite /edge_in.
-move /existsP => [] i.
-move /eqP => h1.
-move => t' t'_in h2.
-move /existsP => [] j.
-move /eqP.
-rewrite -h1 /edges_tr !ffunE.
-move /ffunP => H.
-move : (H 0).
-rewrite !ffunE /=.
-move: (H 1).
-rewrite !ffunE /=.
-move /eqP => H1.
-move /eqP => H2.
-have aux : t' = t.
-  apply /eqP.
-  by rewrite (tr_triangulation t'_in t_in H2 H1).
-rewrite -aux in h2.
-move : h2.
-by rewrite eq_refl.
-Qed.
 
 Fixpoint find_triangle_in_list (p : T -> bool) (tr_enum : list T) : option T :=
   match tr_enum with
@@ -270,6 +212,83 @@ rewrite -(not_in t2 a l nta).
 by apply: H.
 Qed.
 
+Variable target_pt : P.
+
+Definition is_separating_edge (t : T) (i : 'I_3) :=
+  0 < tr_area R (coords (t i)) (coords target_pt) (coords (t (i + 1))).
+
+Definition separating_edge_i (t : T) (i : 'I_3) :=
+  if (is_separating_edge t i) then Some (edges_tr t i) 
+    else if (is_separating_edge t (i + 1)) then Some (edges_tr t (i + 1))
+    else if (is_separating_edge t (i + 1 + 1)) then Some (edges_tr t (i + 1 + 1))
+    else None.
+
+Definition separating_edge (t : T) :=
+  separating_edge_i t 0.
+
+Section triangulation.
+
+Variable tr : triangulation [finType of T].
+
+Hypothesis tr_orientation :
+  forall (t : T), t \in tr -> 0 < triangle_area t.
+
+Hypothesis tr_triangulation :
+  forall (t t' : T) (i j : 'I_3),
+  t \in tr -> t' \in tr -> t i == t' j -> t (i + 1) == t' (j + 1) -> t == t'.
+
+Lemma common_points (t1 t2 : T) :
+  forall (i j : 'I_3),  t1 \in tr -> t2 \in tr -> 
+  t1 i = t2 (j + 1) -> t1 (i + 1) = t2 j -> ~ point_in (t2 (j + 1 + 1)) t1.
+Proof.
+move => i j t1_in t2_in h1 h2.
+rewrite /point_in.
+move /existsP => [] x.
+rewrite -(subrK i x).
+elim/elimI3: (x - i).
+    rewrite add0r h1 => /eqP h3.
+    have := tr_orientation t2_in.
+    rewrite (triangle_area_no_dup h3).
+    by rewrite Order.POrderTheory.ltxx.
+  rewrite addrC h2 eq_sym -[X in (_ == t2 X)]addr0 -p1p11 !addrA=> /eqP h3. 
+  have := tr_orientation t2_in.
+  rewrite (triangle_area_no_dup h3).
+  by rewrite Order.POrderTheory.ltxx.
+rewrite addrC addrA => /eqP h3.
+have := tr_orientation t1_in.
+rewrite (starter_pt_triangle_area i) h1 h2 h3 -(inv_cycle_tr_area R) 
+  (flipr_tr_area R) -(starter_pt_triangle_area j) oppr_gt0.
+rewrite Order.POrderTheory.lt_gtF; first by[].
+by apply: (tr_orientation t2_in).
+Qed.
+
+Lemma unique_edge :
+  forall (t : T) (e : E), (t \in tr) -> (edge_in e t) -> 
+    forall (t' : T), (t' \in tr) -> t' != t -> ~ (edge_in e t').
+Proof.
+move => t e t_in.
+rewrite /edge_in.
+move /existsP => [] i.
+move /eqP => h1.
+move => t' t'_in h2.
+move /existsP => [] j.
+move /eqP.
+rewrite -h1 /edges_tr !ffunE.
+move /ffunP => H.
+move : (H 0).
+rewrite !ffunE /=.
+move: (H 1).
+rewrite !ffunE /=.
+move /eqP => H1.
+move /eqP => H2.
+have aux : t' = t.
+  apply /eqP.
+  by rewrite (tr_triangulation t'_in t_in H2 H1).
+rewrite -aux in h2.
+move : h2.
+by rewrite eq_refl.
+Qed.
+
 Definition find_triangle_of_edge (e : E) : option T :=
   find_triangle_in_list (edge_in e) (enum tr).
 
@@ -305,20 +324,6 @@ move => h.
 apply: aux.
 by apply (correc_find_triangle e t).
 Qed.
-
-Variable target_pt : P.
-
-Definition is_separating_edge (t : T) (i : 'I_3) :=
-  0 < tr_area R (coords (t i)) (coords target_pt) (coords (t (i + 1))).
-
-Definition separating_edge_i (t : T) (i : 'I_3) :=
-  if (is_separating_edge t i) then Some (edges_tr t i) 
-    else if (is_separating_edge t (i + 1)) then Some (edges_tr t (i + 1))
-    else if (is_separating_edge t (i + 1 + 1)) then Some (edges_tr t (i + 1 + 1))
-    else None.
-
-Definition separating_edge (t : T) :=
-  separating_edge_i t 0.
 
 Lemma separating_edge_is_separating_edge :
   forall (t : T) (i : 'I_3),
@@ -460,5 +465,117 @@ apply : elimI3.
   by rewrite p1p11 (inv_cycle_power R).
 by rewrite p1p11 add0r -(inv_cycle_power R).
 Qed.
+
+End triangulation.
+
+Section delaunay_walk.
+
+Variable tr : triangulation [finType of T].
+
+Hypothesis tr_orientation :
+  forall (t : T), t \in tr -> 0 < triangle_area t.
+
+Hypothesis tr_triangulation :
+  forall (t t' : T) (i j : 'I_3),
+  t \in tr -> t' \in tr -> t i == t' j -> t (i + 1) == t' (j + 1) -> t == t'.
+
+Hypothesis is_Delaunay_tr :
+  forall (t1 t2 : T) (i : 'I_3), t1 \in tr -> t2 \in tr ->
+  ( ~ point_in (t2 i) t1) -> 0 < tr_dist t1 (t2 i).
+
+Lemma decrease_condition :
+  forall (e : E) (t t' : T), (t \in tr) -> 
+  separating_edge t = Some e -> 
+    find_triangle_of_edge tr (oppos_edge e) = Some t' -> walk_lt R [finType of T] triangle_measure t' t.
+Proof.
+move => e t1 t2 t1_tr h1 h2.
+have t2_tr : t2 \in tr.
+  have aux : (edge_in (oppos_edge e) t2) /\ (t2 \in tr) -> (t2 \in tr).
+    move => H.
+    by destruct H as [H1 H2].
+  apply: aux.
+  rewrite -correc_find_triangle//.
+have neighbours : exists (i j : 'I_3), 
+  (t1 i = t2 (j + 1)) /\ (t1 (i + 1) = t2 j) /\ 
+  (is_separating_edge t1 i) /\ ~ point_in (t2 (j + 1 + 1)) t1.
+  have e_in_t1: exists (i : 'I_3), edges_tr t1 i = e.
+    apply: edge_in_exists.
+    by apply: separating_edge_in_triangle h1.
+  have oppos_e_in_t2: exists (i : 'I_3), edges_tr t2 i = oppos_edge e.
+    apply: edge_in_exists.
+    have aux : (edge_in (oppos_edge e) t2) /\ (t2 \in tr) -> edge_in (oppos_edge e) t2.
+      move => H.
+      by destruct H as [H1 H2].
+    apply: aux. 
+    rewrite -correc_find_triangle//.
+  destruct e_in_t1 as [i].
+  have edge_is_separating : is_separating_edge t1 i.
+    apply: separating_edge_is_separating_edge.
+      rewrite H.
+      by apply: h1.
+  destruct oppos_e_in_t2 as [j].
+  rewrite -H in H0.
+  move: H0.
+  rewrite -ffunP .
+  move => H'.
+  move: (H' 0).
+  move: (H' 1).
+  move => H0 H1.
+  rewrite !ffunE /= in H0.
+  rewrite !ffunE /= in H1.
+  have diff_point :
+    ~ point_in (t2 (j + 1 + 1)) t1.
+    apply common_points with tr i=>//.
+    rewrite /edge_in.
+  exists i.
+  exists j.
+  split; by [].
+rewrite /walk_lt -subr_gt0.
+destruct neighbours as [i h].
+destruct h as [j].
+rewrite (starter_pt_measure i t1 target_pt) (starter_pt_measure (j + 1) t2 target_pt).
+rewrite p1p1p1_I3.
+destruct H as [H1 H2].
+destruct H2 as [H2 H3].
+destruct H3 as [H3 H4].
+rewrite -H1 -H2.
+apply: (power_decrease R).
+      rewrite -(starter_pt_triangle_area i t1).
+      by apply: tr_orientation.
+    rewrite H1 H2.
+    rewrite (inv_cycle_tr_area R).
+    rewrite -(starter_pt_triangle_area j t2).
+    by apply: tr_orientation.
+  by apply: H3.
+rewrite -(starter_pt_dist i t1).
+by apply: is_Delaunay_tr.
+Qed.
+
+Definition walk_impl :=
+  walk R [finType of E] [finType of T] edge_in tr
+ oppos_edge separating_edge
+  (find_triangle_of_edge tr) (correc_find_triangle tr_triangulation) triangle_measure decrease_condition.
+
+Lemma walk_impl_result_edge :
+  forall (e : E) (t : {t : T | t \in tr}),
+  walk_impl t = inr e -> (exists (t1 : T), edge_in (oppos_edge e) t1) /\
+    (forall (t2 : T), t2 \in tr -> ~~ edge_in e t2).
+Proof.
+apply: walk_result_edge.
+apply: inv_oppos_edge.
+apply: separating_edge_in_triangle.
+Qed.
+
+Definition target_in_impl :=
+  target_in [finType of E] [finType of T] separating_edge.
+
+Lemma walk_impl_result_triangle :
+  forall (t1 : {t : T | t \in tr}) (t2 : T),
+  walk_impl t1 = inl t2 -> target_in_impl t2.
+Proof.
+by apply: walk_result_triangle.
+Qed.
+
+End delaunay_walk.
 
 End implementation.
