@@ -16,21 +16,9 @@ Variable R : realDomainType.
 
 Variable E : finType. 
 
-Variable T : Type.
+Variable d : unit.
 
-Variable triangle : Finite.class_of T.
-
-Canonical T_eq := EqType T triangle.
-
-Canonical T_choice := ChoiceType T (Choice.mixin triangle).
-
-Canonical T_count := CountType T triangle.
-
-Canonical T_fin := FinType T triangle.
-
-Variable T_o : leOrderMixin [choiceType of T].
-
-Canonical T_orderType := POrderType tt T T_o.
+Variable T : finOrderType d.
 
 Variable edge_in : E -> T -> bool.
 
@@ -48,30 +36,21 @@ Hypothesis separating_edge_in_triangle :
   forall (e : E) (t : T),
   separating_edge t = Some e -> edge_in e t.
 
-Definition triangulation := {set T}.
+Definition triangulation_ of leOrderMixin [choiceType of {set T}] := {set T}.
 
-Variable finite_tr : Finite.class_of triangulation.
-
-Canonical tr_eqType := EqType triangulation finite_tr.
-
-Canonical tr_choiceType := ChoiceType triangulation (Choice.mixin finite_tr).
-
-Canonical tr_countType := CountType triangulation finite_tr.
-
-Canonical tr_finType := FinType triangulation finite_tr.
-
-Variable tr_o : leOrderMixin [choiceType of triangulation].
+Variable tr_o : leOrderMixin [choiceType of {set T}].
+Notation triangulation := (triangulation_ tr_o).
 
 Canonical tr_orderType := POrderType tt triangulation tr_o.
 
-Variable find_triangle_of_edge : E -> option T.
+Variable find_triangle_of_edge : triangulation -> E -> option T.
 
 Hypothesis correction_find_triangle :
   forall (tr : triangulation) (e : E) (t : T),
-  find_triangle_of_edge e = Some t <-> (edge_in e t) /\ (t \in tr).
+  find_triangle_of_edge tr e = Some t <-> (edge_in e t) /\ (t \in tr).
 
 Lemma invariant_find_triangle_of_edge : forall (tr : triangulation) (e : E) (t : T),
-   find_triangle_of_edge e = Some t -> t \in tr.
+   find_triangle_of_edge tr e = Some t -> t \in tr.
 Proof.
 by move => tr e t; rewrite (correction_find_triangle tr); case.
 Qed.
@@ -107,7 +86,7 @@ Qed.
 
 Lemma edge_in_find_triangle_of_edge : forall (e : E) (t : T),
    t \in tr -> 
-   edge_in e t -> find_triangle_of_edge e = Some t.
+   edge_in e t -> find_triangle_of_edge tr e = Some t.
 Proof.
 move => e t h1 h2.
 by apply (correction_find_triangle tr e t).
@@ -117,15 +96,15 @@ Hypothesis decrease_condition :
   forall (e : E) (t t' : T),
   t \in tr ->
   separating_edge t = Some e -> 
-    find_triangle_of_edge (opposite_edge e) = Some t' -> walk_lt t' t.
+    find_triangle_of_edge tr (opposite_edge e) = Some t' -> walk_lt t' t.
 
 Definition separating_inspect (t : T) :
   {e' : option E | separating_edge t = e'} :=
  exist _ (separating_edge t) erefl.
 
 Definition find_triangle_inspect (e : E) :
-  {t' : option T | find_triangle_of_edge e = t'} :=
-  exist _ (find_triangle_of_edge e) erefl.
+  {t' : option T | find_triangle_of_edge tr e = t'} :=
+  exist _ (find_triangle_of_edge tr e) erefl.
 
 Equations walk (current_triangle : {t : T | t \in tr})
    : T + E by wf current_triangle walk_lt' :=
@@ -187,42 +166,19 @@ Variable flip_t : E -> T -> T.
 
 Hypothesis correct_flip :
   forall (e : E) (ttr : tr_T),
-  let (tr, t) := proj1_sig ttr in
-  flip_t e t \in flip_tr e tr.
+  flip_t e (proj1_sig ttr).2 \in flip_tr e (proj1_sig ttr).1.
 
-Variable common_edge : T -> T -> option E.
-
-Definition contains_edge (tr : triangulation) (e : E) :=
-  [exists t : {t : T | t \in tr}, edge_in e (proj1_sig t)].
-
-Hypothesis non_delaunay : forall (t1 t2 : T) (tr : triangulation) (e : E),
+Hypothesis non_delaunay_decrease : forall (t1 t2 : T) (tr : triangulation) (e : E),
   ~~ delaunay_criterion t1 t2 -> t1 \in tr -> t2 \in tr ->
-  common_edge t1 t2 = Some e ->
+  edge_in e t1 ->
+  edge_in (opposite_edge e) t2 ->
   flip_tr e tr < tr.
 
-Hypothesis delaunay : forall (t1 t2 : T) (e : E) (tr : triangulation),
+Hypothesis delaunay_decrease : forall (t1 t2 : T) (e : E) (tr : triangulation),
   delaunay_criterion t1 t2 -> t1 \in tr ->
   separating_edge t1 = Some e ->
-  find_triangle_of_edge (opposite_edge e) = Some t2 ->
+  find_triangle_of_edge tr (opposite_edge e) = Some t2 ->
   t2 < t1.
-
-Hypothesis correct_common_edge :
-  forall (t1 t2 : T) (e : E),
-  common_edge t1 t2 = Some e -> edge_in e t1 /\ edge_in (opposite_edge e) t2.
-
-Hypothesis common_edge_alternate : forall (t1 t2 : T) (e : E),
-  common_edge t1 t2 = Some e <-> common_edge t2 t1 = Some (opposite_edge e).
-
-Lemma invariant_separating_edge (e : E) :
-  forall (ttr : tr_T),
-  let (tr, t) := proj1_sig ttr in
-  separating_edge t = Some e -> contains_edge tr e.
-Proof.
-move=> [[tr t]/= ttr] h.
-apply/existsP=>/=.
-exists (exist _ t ttr)=>/=.
-exact: separating_edge_in_triangle.
-Qed.
 
 Definition walk_lt2 (tt1 tt2 : tr_T) := 
   proj1_sig tt1 < proj1_sig tt2.
@@ -246,17 +202,13 @@ Definition delaunay_inspect (t1 t2 : T) :
   {b : bool | delaunay_criterion t1 t2 = b} :=
   exist _ (delaunay_criterion t1 t2) erefl.
 
-Definition flip_tr_inspect (e : E) (tr : triangulation) :
-  {tr' : triangulation | flip_tr e tr = tr'} :=
-  exist _ (flip_tr e tr) erefl.
-
 Equations walk2 (current : {ttr : triangulation * T | ttr.2 \in ttr.1}) :
-  tr_T + {etr : triangulation * E | contains_edge etr.1 etr.2}
+  triangulation * (T + E)
   by wf current walk_lt2 :=
   walk2 current with
     separating_inspect (proj1_sig current).2 => {
       | exist _ (Some edge) eq1
-        with find_triangle_inspect (opposite_edge edge) => {
+        with find_triangle_inspect (proj1_sig current).1 (opposite_edge edge) => {
           | exist _ (Some t2) eq2
             with delaunay_inspect (proj1_sig current).2 t2 => {
               | exist _ false _ := walk2 (exist _
@@ -264,9 +216,63 @@ Equations walk2 (current : {ttr : triangulation * T | ttr.2 \in ttr.1}) :
                                               (correct_flip edge current));
               | exist _ true _ := walk2 (exist _ ((proj1_sig current).1, t2)
                                          (invariant_find_triangle_of_edge _ _ _ eq2))};
-          | exist _ None _ := inr (exist _ (tr, edge)
-                                      (invariant_separating_edge _ _ eq1))};
-      | exist _ None _ := inl current}.
+          | exist _ None _ := ((proj1_sig current).1, inr (opposite_edge edge))};
+      | exist _ None _ := ((proj1_sig current).1, inl (proj1_sig current).2)}.
+Next Obligation.
+rewrite/walk_lt2/= ltEprodlexi/=.
+apply/andP.
+split; first by apply: lexx.
+apply/implyP=> _.
+by apply: (delaunay_decrease _ _ edge t).
+Qed.
+Next Obligation.
+rewrite/walk_lt2/= ltEprodlexi/=.
+have h : flip_tr edge t < t.
+  apply: (non_delaunay_decrease s t2)=>//.
+        by rewrite e.
+      by rewrite (correction_find_triangle t) in eq2; move:eq2=>[].
+    by apply: separating_edge_in_triangle.
+  by rewrite (correction_find_triangle t) in eq2; move:eq2=>[].
+apply/andP.
+split; first by apply: ltW.
+apply/implyP.
+by rewrite lt_geF.
+Qed.
+
+Lemma walk2_result_edge :
+  forall (e : E) (result_tr : triangulation) (start : tr_T),
+  walk2 start = (result_tr, inr e) ->
+  (exists (t1 : T), edge_in (opposite_edge e) t1) /\
+    (forall (t2 : T), t2 \in result_tr -> ~~ edge_in e t2).
+Proof.
+move => e result_tr [[tr t]/= p] h.
+funelim (walk2 (exist _ (tr, t) p)); rewrite h in Heqcall.
+      by[].
+    move: Heqcall=>[tr_result opposite_e0].
+    split.
+      exists t.
+      rewrite -opposite_e0 involution_opposite_edge.
+      exact: separating_edge_in_triangle.
+    move=> t2 t2_in_tr.
+    apply /negP => /(edge_in_find_triangle_of_edge result_tr e0 t2 t2_in_tr).
+    by rewrite -opposite_e0 -tr_result e.
+  exact: H.
+exact: H.
+Qed.
+
+Lemma walk2_result_triangle :
+  forall (start : tr_T) (result_tr : triangulation) (t2 : T),
+  walk2 start = (result_tr, inl t2) -> target_in t2.
+Proof.
+move => [[tr t]/= p] result_tr t2 h.
+rewrite/target_in.
+apply/eqP.
+funelim (walk2 (exist _ (tr, t) p)); rewrite h in Heqcall=>//.
+    move:Heqcall=>[_ eq_t_t2].
+    by rewrite -eq_t_t2.
+  exact: (H result_tr).
+exact: (H result_tr).
+Qed.
 
 End non_delaunay_walk_parameters.
 

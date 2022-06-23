@@ -72,7 +72,7 @@ Definition t_make (p0 p1 p2 : P) : T :=
   [ffun i : 'I_3 => 
     if val i == 0%nat then p0 else if val i == 1%nat then p1 else p2].
 
-Hypothesis inj_triangles : 
+Hypothesis inj_triangles :
   forall (t : T), forall (i j : 'I_3), (t i) == (t j) -> i == j.
 
 Definition triangle_area (t : T) :=
@@ -140,6 +140,7 @@ apply : elimI3; first by rewrite add0r.
 by rewrite p1p11 add0r -(inv_cycle_out_circle R).
 Qed.
 
+Search find inside seq.
 
 Fixpoint find_triangle_in_list (p : T -> bool) (tr_enum : list T) : option T :=
   match tr_enum with
@@ -228,7 +229,9 @@ Definition separating_edge (t : T) :=
 
 Section triangulation.
 
-Variable tr : triangulation [finType of T].
+
+
+Variable tr : triangulation_ [finType of T].
 
 Hypothesis tr_orientation :
   forall (t : T), t \in tr -> 0 < triangle_area t.
