@@ -35,7 +35,11 @@ Hypothesis separating_edge_in_triangle :
   forall (e : E) (t : T),
   separating_edge t = Some e -> edge_in e t.
 
-Definition triangulation := {set T}.
+Definition triangulation_ := {set T}.
+
+Variable is_tr : pred triangulation_.
+
+Definition triangulation := { tr : triangulation_ | is_tr tr}.
 
 Variable rel_tr : rel triangulation.
 
@@ -47,10 +51,10 @@ Variable find_triangle_of_edge : triangulation -> E -> option T.
 
 Hypothesis correction_find_triangle :
   forall (tr : triangulation) (e : E) (t : T),
-  find_triangle_of_edge tr e = Some t <-> (edge_in e t) /\ (t \in tr).
+  find_triangle_of_edge tr e = Some t <-> (edge_in e t) /\ (t \in (proj1_sig tr)).
 
 Lemma invariant_find_triangle_of_edge : forall (tr : triangulation) (e : E) (t : T),
-   find_triangle_of_edge tr e = Some t -> t \in tr.
+   find_triangle_of_edge tr e = Some t -> t \in (proj1_sig tr).
 Proof.
 by move => tr e t; rewrite (correction_find_triangle tr); case.
 Qed.
@@ -71,7 +75,7 @@ Proof.
 rewrite /WellFounded; apply relT_well_founded.
 Qed.
 
-Definition walk_lt (t1 t2 : {t : T | t \in tr}) : bool := 
+Definition walk_lt (t1 t2 : {t : T | t \in (proj1_sig tr)}) : bool := 
   relT (proj1_sig t1) (proj1_sig t2).
 
 Instance walk_lt_wf : WellFounded walk_lt.
@@ -82,7 +86,7 @@ apply: relT_well_founded.
 Qed.
 
 Lemma edge_in_find_triangle_of_edge : forall (e : E) (t : T),
-   t \in tr -> 
+   t \in (proj1_sig tr) -> 
    edge_in e t -> find_triangle_of_edge tr e = Some t.
 Proof.
 move => e t h1 h2.
@@ -91,7 +95,7 @@ Qed.
 
 Hypothesis decrease_condition :
   forall (e : E) (t t' : T),
-  t \in tr ->
+  t \in (proj1_sig tr) ->
   separating_edge t = Some e -> 
     find_triangle_of_edge tr (opposite_edge e) = Some t' -> relT t' t.
 
@@ -103,7 +107,7 @@ Definition find_triangle_inspect (e : E) :
   {t' : option T | find_triangle_of_edge tr e = t'} :=
   exist _ (find_triangle_of_edge tr e) erefl.
 
-Equations walk (current_triangle : {t : T | t \in tr})
+Equations walk (current_triangle : {t : T | t \in (proj1_sig tr)})
    : T + E by wf current_triangle walk_lt :=
 walk current_triangle with
     separating_inspect (proj1_sig current_triangle) => { 
@@ -120,9 +124,9 @@ by rewrite /walk_lt /=; apply: (decrease_condition edge).
 Qed.
 
 Lemma walk_result_edge :
-  forall (e : E) (t : {t : T | t \in tr}),
+  forall (e : E) (t : {t : T | t \in (proj1_sig tr)}),
   walk t = inr e -> (exists (t1 : T), edge_in (opposite_edge e) t1) /\
-    (forall (t2 : T), t2 \in tr -> ~~ edge_in e t2).
+    (forall (t2 : T), t2 \in (proj1_sig tr) -> ~~ edge_in e t2).
 Proof.
 move => e t h; funelim (walk t); rewrite h in Heqcall; first by[].
   move: Heqcall.
@@ -138,7 +142,7 @@ by rewrite -heq eq2.
 Qed.
 
 Lemma walk_result_triangle :
-  forall (t1 : {t : T | t \in tr}) (t2 : T),
+  forall (t1 : {t : T | t \in (proj1_sig tr)}) (t2 : T),
   walk t1 = inl t2 -> target_in t2.
 Proof.
 move => t1 t2 h; funelim (walk t1); rewrite h in Heqcall; last by[];
@@ -153,7 +157,7 @@ End delaunay_walk_parameters.
 
 Section non_delaunay_walk_parameters.
 
-Definition tr_T := {ttr : triangulation * T | ttr.2 \in ttr.1}.
+Definition tr_T := {ttr : triangulation * T | ttr.2 \in (proj1_sig ttr.1)}.
 
 Variable delaunay_criterion : T -> T -> bool.
 
@@ -163,16 +167,16 @@ Variable flip_t : E -> T -> T.
 
 Hypothesis correct_flip :
   forall (e : E) (ttr : tr_T),
-  flip_t e (proj1_sig ttr).2 \in flip_tr e (proj1_sig ttr).1.
+  flip_t e (proj1_sig ttr).2 \in proj1_sig (flip_tr e (proj1_sig ttr).1).
 
 Hypothesis non_delaunay_decrease : forall (t1 t2 : T) (tr : triangulation) (e : E),
-  ~~ delaunay_criterion t1 t2 -> t1 \in tr -> t2 \in tr ->
+  ~~ delaunay_criterion t1 t2 -> t1 \in (proj1_sig tr) -> t2 \in (proj1_sig tr) ->
   edge_in e t1 ->
   edge_in (opposite_edge e) t2 ->
   rel_tr (flip_tr e tr) tr.
 
 Hypothesis delaunay_decrease : forall (t1 t2 : T) (e : E) (tr : triangulation),
-  delaunay_criterion t1 t2 -> t1 \in tr ->
+  delaunay_criterion t1 t2 -> t1 \in (proj1_sig tr) ->
   separating_edge t1 = Some e ->
   find_triangle_of_edge tr (opposite_edge e) = Some t2 ->
   relT t2 t1.
@@ -201,7 +205,7 @@ Definition delaunay_inspect (t1 t2 : T) :
   {b : bool | delaunay_criterion t1 t2 = b} :=
   exist _ (delaunay_criterion t1 t2) erefl.
 
-Equations walk2 (current : {ttr : triangulation * T | ttr.2 \in ttr.1}) :
+Equations walk2 (current : tr_T) :
   triangulation * (T + E)
   by wf current walk_lt2 :=
   walk2 current with
@@ -223,24 +227,27 @@ apply/orP.
 right.
 apply/andP.
 split; first by apply/eqP.
-by apply: (delaunay_decrease _ _ edge t).
+apply: (delaunay_decrease _ _ edge (proj1_sig current).1)=>//=.
+apply: (proj2_sig current).
 Qed.
 Next Obligation.
+move:e eq2 eq1 walk2.
+case: current=> [[tr t]/= p] e eq2 eq1 walk2.
 rewrite/walk_lt2/rel_lexi/wf_finset.rel_lexi/=.
 apply/orP.
 left.
-apply: (non_delaunay_decrease s t2)=>//.
+apply: (non_delaunay_decrease t t2)=>//.
       by rewrite e.
-    by rewrite (correction_find_triangle t) in eq2; move:eq2=>[].
+    by rewrite (correction_find_triangle tr) in eq2; move:eq2=>[].
   by apply: separating_edge_in_triangle.
-by rewrite (correction_find_triangle t) in eq2; move:eq2=>[].
+by rewrite (correction_find_triangle tr) in eq2; move:eq2=>[].
 Qed.
 
 Lemma walk2_result_edge :
   forall (e : E) (result_tr : triangulation) (start : tr_T),
   walk2 start = (result_tr, inr e) ->
   (exists (t1 : T), edge_in (opposite_edge e) t1) /\
-    (forall (t2 : T), t2 \in result_tr -> ~~ edge_in e t2).
+    (forall (t2 : T), t2 \in (proj1_sig result_tr) -> ~~ edge_in e t2).
 Proof.
 move => e result_tr [[tr t]/= p] h.
 funelim (walk2 (exist _ (tr, t) p)); rewrite h in Heqcall.
@@ -259,16 +266,16 @@ Qed.
 
 Lemma walk2_result_triangle :
   forall (start : tr_T) (result_tr : triangulation) (t2 : T),
-  walk2 start = (result_tr, inl t2) -> target_in t2.
+  walk2 start = (result_tr, inl t2) ->
+  target_in t2.
 Proof.
-move => [[tr t]/= p] result_tr t2 h.
+move=> [[tr t] p] result_tr t2 h.
 rewrite/target_in.
-apply/eqP.
 funelim (walk2 (exist _ (tr, t) p)); rewrite h in Heqcall=>//.
-    move:Heqcall=>[_ eq_t_t2].
-    by rewrite -eq_t_t2.
+    move:Heqcall=>[eq1 eq_t_t2].
+    by apply/eqP; rewrite -eq_t_t2.
   exact: (H result_tr).
-exact: (H result_tr).
+apply: (H result_tr)=>//=.
 Qed.
 
 End non_delaunay_walk_parameters.

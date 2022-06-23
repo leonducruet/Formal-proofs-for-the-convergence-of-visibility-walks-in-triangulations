@@ -140,8 +140,6 @@ apply : elimI3; first by rewrite add0r.
 by rewrite p1p11 add0r -(inv_cycle_out_circle R).
 Qed.
 
-Search find inside seq.
-
 Fixpoint find_triangle_in_list (p : T -> bool) (tr_enum : list T) : option T :=
   match tr_enum with
   | nil => None
