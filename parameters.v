@@ -3,22 +3,21 @@ From Equations Require Import Equations.
 
 Require Import wf_finset.
 
-Import GRing.Theory Num.Theory Order.Theory Order.POrderTheory.
-Import DefaultProdLexiOrder.
-
 Open Scope ring_scope.
-
-Local Open Scope order_scope.
 
 Section parameters.
 
 Variable R : realDomainType.
 
-Variable E : finType. 
+Variable E : finType.
 
-Variable d : unit.
+Variable T : finType.
 
-Variable T : finOrderType d.
+Variable relT : rel T.
+
+Hypothesis relT_trans : transitive relT.
+
+Hypothesis relT_irrefl : irreflexive relT.
 
 Variable edge_in : E -> T -> bool.
 
@@ -36,12 +35,13 @@ Hypothesis separating_edge_in_triangle :
   forall (e : E) (t : T),
   separating_edge t = Some e -> edge_in e t.
 
-Definition triangulation_ of leOrderMixin [choiceType of {set T}] := {set T}.
+Definition triangulation := {set T}.
 
-Variable tr_o : leOrderMixin [choiceType of {set T}].
-Notation triangulation := (triangulation_ tr_o).
+Variable rel_tr : rel triangulation.
 
-Canonical tr_orderType := POrderType tt triangulation tr_o.
+Hypothesis rel_tr_trans : transitive rel_tr.
+
+Hypothesis rel_tr_irrefl : irreflexive rel_tr.
 
 Variable find_triangle_of_edge : triangulation -> E -> option T.
 
@@ -59,29 +59,26 @@ Section delaunay_walk_parameters.
 
 Variable tr : triangulation.
 
-Definition walk_lt (t1 t2 : T) := t1 < t2.
-
-Lemma walk_lt_well_founded : well_founded walk_lt.
+Lemma relT_well_founded : well_founded relT.
 Proof.
 apply: wf_rel.
-  move=>t1 t2 t3.
-  apply: lt_trans.
-apply: lt_irreflexive.
+  apply: relT_trans.
+apply: relT_irrefl.
 Qed.
+
+Instance relT_wf : WellFounded relT.
+Proof.
+rewrite /WellFounded; apply relT_well_founded.
+Qed.
+
+Definition walk_lt (t1 t2 : {t : T | t \in tr}) : bool := 
+  relT (proj1_sig t1) (proj1_sig t2).
 
 Instance walk_lt_wf : WellFounded walk_lt.
 Proof.
-rewrite /WellFounded; apply walk_lt_well_founded.
-Qed.
-
-Definition walk_lt' (t1 t2 : {t : T | t \in tr}) : bool := 
-  (proj1_sig t1) < (proj1_sig t2).
-
-Instance walk'_lt_wf : WellFounded walk_lt'.
-Proof.
 rewrite /WellFounded.
-apply: (Inverse_Image.wf_inverse_image _ T walk_lt).
-apply: walk_lt_well_founded.
+apply: (Inverse_Image.wf_inverse_image _ T relT).
+apply: relT_well_founded.
 Qed.
 
 Lemma edge_in_find_triangle_of_edge : forall (e : E) (t : T),
@@ -96,7 +93,7 @@ Hypothesis decrease_condition :
   forall (e : E) (t t' : T),
   t \in tr ->
   separating_edge t = Some e -> 
-    find_triangle_of_edge tr (opposite_edge e) = Some t' -> walk_lt t' t.
+    find_triangle_of_edge tr (opposite_edge e) = Some t' -> relT t' t.
 
 Definition separating_inspect (t : T) :
   {e' : option E | separating_edge t = e'} :=
@@ -107,7 +104,7 @@ Definition find_triangle_inspect (e : E) :
   exist _ (find_triangle_of_edge tr e) erefl.
 
 Equations walk (current_triangle : {t : T | t \in tr})
-   : T + E by wf current_triangle walk_lt' :=
+   : T + E by wf current_triangle walk_lt :=
 walk current_triangle with
     separating_inspect (proj1_sig current_triangle) => { 
      | exist _ (Some edge) eq1
@@ -119,7 +116,7 @@ walk current_triangle with
           | exist _ None eq2 := inr (opposite_edge edge)};
      | exist _ None eq1 := inl (proj1_sig (current_triangle))}.
 Next Obligation.
-by rewrite /walk_lt' /=; apply: (decrease_condition edge).
+by rewrite /walk_lt /=; apply: (decrease_condition edge).
 Qed.
 
 Lemma walk_result_edge :
@@ -172,25 +169,27 @@ Hypothesis non_delaunay_decrease : forall (t1 t2 : T) (tr : triangulation) (e : 
   ~~ delaunay_criterion t1 t2 -> t1 \in tr -> t2 \in tr ->
   edge_in e t1 ->
   edge_in (opposite_edge e) t2 ->
-  flip_tr e tr < tr.
+  rel_tr (flip_tr e tr) tr.
 
 Hypothesis delaunay_decrease : forall (t1 t2 : T) (e : E) (tr : triangulation),
   delaunay_criterion t1 t2 -> t1 \in tr ->
   separating_edge t1 = Some e ->
   find_triangle_of_edge tr (opposite_edge e) = Some t2 ->
-  t2 < t1.
+  relT t2 t1.
+
+Definition rel_lexi := rel_lexi [finType of triangulation] T rel_tr relT.
 
 Definition walk_lt2 (tt1 tt2 : tr_T) := 
-  proj1_sig tt1 < proj1_sig tt2.
+  rel_lexi (proj1_sig tt1) (proj1_sig tt2).
 
 Lemma walk_lt2_well_founded : well_founded walk_lt2.
 Proof.
 rewrite/walk_lt2.
 apply: wf_rel=>/=.
   move=> [t1 t1_proof] [t2 t2_proof] [t3 t3_proof].
-  apply: lt_trans.
+  by apply: rel_lexi_trans.
 move=> [t t_proof].
-apply lt_irreflexive.
+by apply rel_lexi_irrefl.
 Qed.
 
 Instance walk_lt2_wf : WellFounded walk_lt2.
@@ -219,24 +218,22 @@ Equations walk2 (current : {ttr : triangulation * T | ttr.2 \in ttr.1}) :
           | exist _ None _ := ((proj1_sig current).1, inr (opposite_edge edge))};
       | exist _ None _ := ((proj1_sig current).1, inl (proj1_sig current).2)}.
 Next Obligation.
-rewrite/walk_lt2/= ltEprodlexi/=.
+rewrite/walk_lt2/rel_lexi/wf_finset.rel_lexi/=.
+apply/orP.
+right.
 apply/andP.
-split; first by apply: lexx.
-apply/implyP=> _.
+split; first by apply/eqP.
 by apply: (delaunay_decrease _ _ edge t).
 Qed.
 Next Obligation.
-rewrite/walk_lt2/= ltEprodlexi/=.
-have h : flip_tr edge t < t.
-  apply: (non_delaunay_decrease s t2)=>//.
-        by rewrite e.
-      by rewrite (correction_find_triangle t) in eq2; move:eq2=>[].
-    by apply: separating_edge_in_triangle.
-  by rewrite (correction_find_triangle t) in eq2; move:eq2=>[].
-apply/andP.
-split; first by apply: ltW.
-apply/implyP.
-by rewrite lt_geF.
+rewrite/walk_lt2/rel_lexi/wf_finset.rel_lexi/=.
+apply/orP.
+left.
+apply: (non_delaunay_decrease s t2)=>//.
+      by rewrite e.
+    by rewrite (correction_find_triangle t) in eq2; move:eq2=>[].
+  by apply: separating_edge_in_triangle.
+by rewrite (correction_find_triangle t) in eq2; move:eq2=>[].
 Qed.
 
 Lemma walk2_result_edge :
