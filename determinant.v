@@ -45,25 +45,12 @@ move => [a_x a_y][b_x b_y][c_x c_y].
 by rewrite !poly_area; field.
 Qed.
 
-Lemma flipl_tr_area (A B C : R * R) :
-  tr_area A B C = - tr_area B A C.
-Proof.
-by rewrite inv_cycle_tr_area flipr_tr_area -(inv_cycle_tr_area).
-Qed.
-
 Lemma dupl_tr_area (A B : R * R) :
   tr_area A A B = 0.
 Proof.
 move: A B.
 move => [a_x a_y][b_x b_y].
 by rewrite !poly_area; field.
-Qed.
-
-Lemma dupr_tr_area (A B : R * R) :
-  tr_area A B B = 0.
-Proof.
-rewrite -inv_cycle_tr_area.
-by apply : dupl_tr_area.
 Qed.
 
 Definition out_circle (A B C D : R * R) :=
@@ -162,11 +149,6 @@ by rewrite !poly_measure !poly_out_circle; field.
 Qed.
 
 Lemma dupl_measure (A B : R * R) : tr_measure A A B = 0.
-Proof.
-by rewrite poly_measure; field.
-Qed.
-
-Lemma dupr_measure (A B : R * R) : tr_measure A B B = 0.
 Proof.
 by rewrite poly_measure; field.
 Qed.
