@@ -159,13 +159,14 @@ Definition tr_T := {ttr : triangulation * T | ttr.2 \in (proj1_sig ttr.1)}.
 
 Variable delaunay_criterion : T -> T -> bool.
 
-Variable flip_tr : E -> triangulation -> triangulation.
+Variable flip_t : E -> triangulation -> T -> T.
 
-Variable flip_t : E -> T -> T.
+Variable flip_tr : E -> triangulation -> triangulation.
 
 Hypothesis correct_flip :
   forall (e : E) (ttr : tr_T),
-  flip_t e (proj1_sig ttr).2 \in proj1_sig (flip_tr e (proj1_sig ttr).1).
+  flip_t e (proj1_sig ttr).1 (proj1_sig ttr).2 \in
+        proj1_sig (flip_tr e (proj1_sig ttr).1).
 
 Hypothesis non_delaunay_decrease : forall (t1 t2 : T) (tr : triangulation) (e : E),
   ~~ delaunay_criterion t1 t2 -> t1 \in (proj1_sig tr) -> t2 \in (proj1_sig tr) ->
@@ -213,7 +214,8 @@ Equations walk2 (current : tr_T) :
           | exist _ (Some t2) eq2
             with delaunay_inspect (proj1_sig current).2 t2 => {
               | exist _ false _ := walk2 (exist _
-              (flip_tr edge (proj1_sig current).1, flip_t edge (proj1_sig current).2)
+              (flip_tr edge (proj1_sig current).1,
+                  flip_t edge (proj1_sig current).1 (proj1_sig current).2)
                                               (correct_flip edge current));
               | exist _ true _ := walk2 (exist _ ((proj1_sig current).1, t2)
                                          (invariant_find_triangle_of_edge _ _ _ eq2))};

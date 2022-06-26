@@ -200,20 +200,20 @@ rewrite/rel_tr.
 exact: lt_irreflexive.
 Qed.
 
-Fixpoint find_triangle_in_list (p : T -> bool) (tr_enum : list T) :option T :=
+Fixpoint find_in_list {T : Type} (p : T -> bool) (tr_enum : list T) :option T :=
   match tr_enum with
   | nil => None
-  | t :: tail => if (p t) then Some t else find_triangle_in_list p tail
+  | t :: tail => if (p t) then Some t else find_in_list p tail
   end.
 
 Definition find_triangle_of_edge (tr : triangulation) (e : E) : option T :=
-  find_triangle_in_list (edge_in e) (enum (proj1_sig tr)).
+  find_in_list (edge_in e) (enum (proj1_sig tr)).
 
-Lemma correct_find_triangle_in_list (p : T -> bool) (l : list T) (t : T) :
-  find_triangle_in_list p l = Some t -> (p t) /\ (t \in l).
+Lemma correct_find_in_list (p : T -> bool) (l : list T) (t : T) :
+  find_in_list p l = Some t -> (p t) /\ (t \in l).
 Proof.
 elim : l=>[//|t0 l H].
-rewrite/find_triangle_in_list.
+rewrite/find_in_list.
 case: ifP=> [h [<-]|h1 h2].
   split; first by[].
   rewrite in_cons.
@@ -225,7 +225,7 @@ Qed.
 
 Lemma unique_result_find_triangle_in_list (p : T -> bool) (l : list T) (t : T) :
   p t -> (forall t2 : T, t2 \in l -> p t2 -> t2 = t) ->
-    (t \in l /\ find_triangle_in_list p l = Some t) \/ t \notin l.
+    (t \in l /\ find_in_list p l = Some t) \/ t \notin l.
 Proof.
 move=> h1.
 elim: l; first by right.
@@ -238,7 +238,7 @@ case: Hind.
   move=>[h3 h4].
   left.
   split; first by rewrite in_cons; apply/orP; right.
-  rewrite /find_triangle_in_list.
+  rewrite /find_in_list.
   case: ifP; last by move=> _; apply: h4.
   move=> h5.
   rewrite (h2 t')=>//.
@@ -246,7 +246,7 @@ case: Hind.
 move=> h3.
 case_eq (t == t')=>[/eqP <-|h4].
   left; split; first by rewrite in_cons; apply/orP; left.
-  rewrite/find_triangle_in_list.
+  rewrite/find_in_list.
   case:ifP; last by rewrite h1.
   by[].
 right.
@@ -263,7 +263,7 @@ rewrite/find_triangle_of_edge/=.
 split.
   move=> H.
   rewrite -(set_enum tr) inE.
-  by apply: correct_find_triangle_in_list.
+  by apply: correct_find_in_list.
 case=> H1 H2.
 case: (@unique_result_find_triangle_in_list
               (fun t0 => (edge_in e t0)) (enum tr) t).
@@ -408,7 +408,49 @@ End delaunay_walk.
 Section general_walk.
 
 Definition delaunay_criterion (t1 t2 : T) :=
-  [forall i : 'I_3, ( ~~ point_in (t2 i) t1) ==> (0 < triangle_dist t1 (t2 i))]. 
+  [forall i : 'I_3, ( ~~ point_in (t2 i) t1) ==> (0 < triangle_dist t1 (t2 i))].
+
+Hypothesis test : forall t : triangulation_, is_tr t.
+
+Definition not_in_edge (t : T) (e : E) : 'I_3 :=
+  if t 0 == e 0 then 1 + 1 else if t 0 == e 1 then 1 else 0. 
+
+Notation find_triangle_inspect := (find_triangle_inspect _ _ is_tr
+                                                find_triangle_of_edge).
+
+Definition flip_t (e : E) (tr : triangulation) (t : T) : T :=
+  if find_triangle_of_edge tr (opposite_edge e) is Some t' then
+    let i := not_in_edge t e in
+    let j := not_in_edge t' (opposite_edge e) in
+    [ffun i0 : 'I_3 => if i0 == i then t i else
+                        if i0 == i + 1 then t' j else t' (j + 1)]
+  else t.
+
+Lemma correct_flip_t :
+  forall (e : E) (tr : triangulation) (t1 t2 : T),
+  find_triangle_of_edge tr e = Some t1 ->
+  find_triangle_of_edge tr (opposite_edge e) = Some t2 ->
+  is_tr ((flip_t e tr t2) |: ((flip_t e tr t1) |: (proj1_sig tr)) :\ t1 :\ t2).
+Proof.
+move=> e [tr1_ is_tr_tr1_] t1 t2/= find_e_t1 find_oppe_t2.
+rewrite/is_tr/orientation/is_triangulation/flip_t find_oppe_t2/=.
+apply/andP; split.
+  apply/forallP=>/= t.
+  apply/implyP=>/setU1P[->|/setD1P[t_t2/setD1P[t_t1/setU1P[|]]]].
+      
+Search "setU1".
+Check setD1P. Check setU1P.
+
+
+Definition flip_tr (e : E) (tr : triangulation) : triangulation :=
+  if find_triangle_of_edge tr e is Some t1 then
+    if find_triangle_of_edge tr (opposite_edge e) is Some t2 then
+      let t1' := flip_t e tr t1 in
+      let t2' := flip_t e tr t2 in
+      let tr' := t2' |: (t1' |: (proj1_sig tr)) :\ t1 :\ t2 in
+      (exist _ tr' (test tr'))
+    else tr
+  else tr.
 
 End general_walk.
 
