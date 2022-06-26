@@ -7,7 +7,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Import Num.Theory GRing.Theory.
+Import Num.Theory GRing.Theory Order.POrderTheory.
 
 Close Scope order_scope.
 
@@ -25,7 +25,7 @@ Proof.
 move=> p0 p1 p2 [[|[|[|]]] ci] //.
     by have /eqP -> : Ordinal ci == 0.
   by have /eqP -> : Ordinal ci == 1.
-by have /eqP -> : Ordinal ci == (1 + 1).
+by have /eqP -> : Ordinal ci == (-1).
 Qed.
 
 Lemma p1p1_I2 : 
@@ -53,18 +53,7 @@ Variable R : realFieldType.
 
 Variable P : finType.
 
-Variable coords : P -> R * R.
-
 Definition E := {ffun 'I_2 -> P}.
-
-Definition oppos_edge (e : E) : E := 
-  [ffun i : 'I_2 => e (i + 1)].
-
-Lemma inv_oppos_edge (e : E) : (oppos_edge (oppos_edge e)) = e.
-Proof.
-rewrite -ffunP.
-apply: elimI2; by rewrite /oppos_edge ?ffunE p1p1_I2.
-Qed.
 
 Definition T := {ffun 'I_3 -> P}.
 
@@ -72,14 +61,312 @@ Definition t_make (p0 p1 p2 : P) : T :=
   [ffun i : 'I_3 => 
     if val i == 0%nat then p0 else if val i == 1%nat then p1 else p2].
 
-Hypothesis inj_triangles :
-  forall (t : T), forall (i j : 'I_3), (t i) == (t j) -> i == j.
+Variable coords : P -> R * R.
+
+Notation tr_area := (tr_area R).
 
 Definition triangle_area (t : T) :=
-  tr_area R (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))).
+  tr_area (coords (t 0)) (coords (t 1)) (coords (t (-1))).
+
+Lemma triangle_area_invariant (t : T) :
+  forall i : 'I_3,
+  triangle_area t = tr_area (coords (t i)) (coords (t (i + 1))) (coords (t (i - 1))).
+Proof.
+apply: elimI3; first by[].
+  by rewrite inv_cycle_tr_area subrr.
+by rewrite -inv_cycle_tr_area subrr -addrA subrr addr0.
+Qed.
+
+Variable target_pt : P.
+
+Notation power := (power R).
+
+Definition triangle_dist (t : T) (p : P) :=
+  power (coords (t 0)) (coords (t 1)) (coords (t (-1))) (coords p).
+
+Lemma triangle_dist_invariant (t : T) (p : P) :
+  forall i : 'I_3,
+  triangle_dist t p =
+    power (coords (t i)) (coords (t (i + 1))) (coords (t (i - 1))) (coords p).
+Proof.
+apply: elimI3; first by[].
+  by rewrite inv_cycle_power addrN.
+by rewrite -inv_cycle_power subrr -addrA subrr addr0.
+Qed.
+
+Definition triangle_measure (t : T) :=
+  triangle_dist t target_pt.
+
+Definition relT (t t' : T) := triangle_measure t < triangle_measure t'.
+
+Lemma relT_trans : transitive relT.
+Proof.
+move=> y x z.
+rewrite/relT.
+exact: lt_trans.
+Qed.
+
+Lemma relT_irreflexive : irreflexive relT.
+Proof.
+move=> x.
+rewrite/relT.
+exact: lt_irreflexive.
+Qed.
 
 Definition edges_tr (t : T) : {ffun 'I_3 -> E} :=
   [ffun i : 'I_3 => [ffun j : 'I_2 => if val j == 0%N then t i else t (i + 1)]].
+
+Definition edge_in (e : E) (t : T) : bool :=
+  [exists i : 'I_3, (edges_tr t i) == e].
+
+Definition opposite_edge (e : E) : E := 
+  [ffun i : 'I_2 => e (i + 1)].
+
+Lemma involution_opposite_edge : involutive opposite_edge.
+Proof.
+move=> e.
+rewrite -ffunP.
+by apply: elimI2; rewrite /opposite_edge ?ffunE p1p1_I2.
+Qed.
+
+Definition is_separating_edge (t : T) (i : 'I_3) :=
+  0 < tr_area (coords (t i)) (coords target_pt) (coords (t (i + 1))).
+
+Definition separating_edge_i (t : T) (i : 'I_3) :=
+  if (is_separating_edge t i) then Some (edges_tr t i) 
+    else if (is_separating_edge t (i + 1)) then Some (edges_tr t (i + 1))
+    else if (is_separating_edge t (i - 1)) then Some (edges_tr t (i - 1))
+    else None.
+
+Definition separating_edge (t : T) : option E :=
+  separating_edge_i t 0.
+
+Lemma separating_edge_is_separating_edge (t : T) (e : E) :
+  separating_edge t = Some e -> is_separating_edge t 0.
+Proof.
+Abort.
+
+
+Lemma separating_edge_in_triangle : 
+  forall (e : E) (t : T),
+  separating_edge t = Some e -> edge_in e t.
+Proof.
+move=> e t.
+rewrite/separating_edge/separating_edge_i.
+case : ifP=>[_ [<-]|_].
+  by rewrite /edge_in; apply/existsP; exists 0.
+case: ifP=>[_ [<-]|_].
+  by rewrite /edge_in; apply/existsP; exists 1.
+case: ifP=>[_ [<-]|//].
+by rewrite /edge_in; apply/existsP; exists (1+1).
+Qed.
+
+Notation triangulation_ := (triangulation_ [finType of T]).
+
+(*TODO orientation -> injective;retirer injective des hypothèses et écrire lemme*)
+
+Definition injective_triangles (tr : triangulation_) :=
+  [forall t : T, forall i : 'I_3, forall j : 'I_3,
+    (t \in tr) ==> ((t i) == (t j)) ==> (i == j)].
+
+Definition orientation (tr : triangulation_) :=
+  [forall t : T, (t \in tr) ==> (0 < triangle_area t)].
+
+Definition is_triangulation (tr : triangulation_) :=
+  [forall t : T, forall t' : T, forall i : 'I_3, forall j : 'I_3,
+  (t \in tr) ==> (t' \in tr) ==> (t i == t' j) ==> (t (i + 1) == t' (j + 1)) ==>
+    (t == t')].
+
+Definition is_tr (tr : triangulation_) : bool :=
+  (injective_triangles tr) &&
+  (orientation tr) &&
+  (is_triangulation tr).
+
+Notation triangulation := (triangulation [finType of T] is_tr).
+
+Notation tr_measure := (tr_measure R).
+
+Definition triangulation_measure (t : T) :=
+  tr_measure (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))).
+
+Definition measure_triangulation (tr : triangulation) :=
+  \sum_(t <- enum (proj1_sig tr)) triangulation_measure t.
+
+Definition rel_tr (tr tr' : triangulation) :=
+  measure_triangulation tr < measure_triangulation tr'.
+
+Lemma rel_tr_trans : transitive rel_tr.
+Proof.
+move=> y x z.
+rewrite/rel_tr.
+exact: lt_trans.
+Qed.
+
+Lemma rel_tr_irreflexive : irreflexive rel_tr.
+Proof.
+move=> x.
+rewrite/rel_tr.
+exact: lt_irreflexive.
+Qed.
+
+Fixpoint find_triangle_in_list (p : T -> bool) (tr_enum : list T) :option T :=
+  match tr_enum with
+  | nil => None
+  | t :: tail => if (p t) then Some t else find_triangle_in_list p tail
+  end.
+
+Definition find_triangle_of_edge (tr : triangulation) (e : E) : option T :=
+  find_triangle_in_list (edge_in e) (enum (proj1_sig tr)).
+
+Lemma correct_find_triangle_in_list (p : T -> bool) (l : list T) (t : T) :
+  find_triangle_in_list p l = Some t -> (p t) /\ (t \in l).
+Proof.
+elim : l=>[//|t0 l H].
+rewrite/find_triangle_in_list.
+case: ifP=> [h [<-]|h1 h2].
+  split; first by[].
+  rewrite in_cons.
+  by apply/orP; left.
+move: (H h2)=>[].
+split; first by[].
+by rewrite in_cons; apply/orP; right.
+Qed.
+
+Lemma unique_result_find_triangle_in_list (p : T -> bool) (l : list T) (t : T) :
+  p t -> (forall t2 : T, t2 \in l -> p t2 -> t2 = t) ->
+    (t \in l /\ find_triangle_in_list p l = Some t) \/ t \notin l.
+Proof.
+move=> h1.
+elim: l; first by right.
+move=> t' l Hind h2.
+case: Hind.
+    move=> t2 h3 h4.
+    apply: h2; last by[].
+    rewrite in_cons.
+    by apply/orP; right.
+  move=>[h3 h4].
+  left.
+  split; first by rewrite in_cons; apply/orP; right.
+  rewrite /find_triangle_in_list.
+  case: ifP; last by move=> _; apply: h4.
+  move=> h5.
+  rewrite (h2 t')=>//.
+  by rewrite in_cons; apply/orP; left.
+move=> h3.
+case_eq (t == t')=>[/eqP <-|h4].
+  left; split; first by rewrite in_cons; apply/orP; left.
+  rewrite/find_triangle_in_list.
+  case:ifP; last by rewrite h1.
+  by[].
+right.
+rewrite in_cons h4.
+by apply/norP.
+Qed.
+
+Lemma correction_find_triangle :
+  forall (tr : triangulation) (e : E) (t : T),
+  find_triangle_of_edge tr e = Some t <-> (edge_in e t) /\ (t \in (proj1_sig tr)).
+Proof.
+move=> [tr p_tr] e t/=.
+rewrite/find_triangle_of_edge/=.
+split.
+  move=> H.
+  rewrite -(set_enum tr) inE.
+  by apply: correct_find_triangle_in_list.
+case=> H1 H2.
+case: (@unique_result_find_triangle_in_list
+              (fun t0 => (edge_in e t0)) (enum tr) t).
+      by [].
+    move: p_tr H1.
+    rewrite/is_tr/is_triangulation/edge_in/edges_tr=>/andP[_ /forallP/= triangulation_tr].
+    move=>/existsP[i].
+    rewrite ffunE=>/eqP <- t2 h/existsP[i'].
+    rewrite ffunE=>/eqP.
+    rewrite -ffunP=> H1.
+    move: (H1 0) (H1 1).
+    rewrite !ffunE=>/=/eqP eqtt2 /eqP eqtt2'.
+    move: (triangulation_tr t2)=>/forallP /(_ t)/forallP/(_ i')/forallP/(_ i)
+            /implyP.
+    by rewrite -{1}(set_enum tr) inE=>/(_ h)/implyP/(_ H2)/implyP/(_ eqtt2)
+                                    /implyP/(_ eqtt2')/eqP.
+  by case.
+by move:H2; rewrite -{1}(set_enum tr) inE=> ->.
+Qed.
+
+Definition point_in (p : P) (t : T) : bool :=
+  [exists i : 'I_3, (t i) == p].
+
+Variable tr_ : triangulation_.
+
+Hypothesis tr_is_triangulation : is_tr tr_.
+
+Definition tr : triangulation := (exist _ tr_ tr_is_triangulation).
+
+Section delaunay_walk.
+
+Hypothesis delaunay :
+  forall (t1 t2 : T) (i : 'I_3), t1 \in tr_ -> t2 \in tr_ ->
+  ( ~ point_in (t2 i) t1) -> 0 < triangle_dist t1 (t2 i).
+
+Notation walk_lt := (walk_lt [finType of T] relT is_tr tr).
+
+Notation power_decrease := (power_decrease R).
+
+Lemma decrease_condition :
+  forall (e : E) (t t' : T),
+  t \in tr_ ->
+  separating_edge t = Some e -> 
+    find_triangle_of_edge tr (opposite_edge e) = Some t' -> relT t' t.
+Proof.
+move=> e t t' t_in_tr_ sep_edge_t_e find_tr_e_t'.
+rewrite/relT/triangle_measure -subr_gt0.
+move:tr_is_triangulation.
+rewrite/is_tr/injective_triangles/orientation=>
+    /andP[]/andP[]/forallP/=inj/forallP/= oriented/forallP/= is_triang.
+move:(separating_edge_in_triangle sep_edge_t_e).
+rewrite/edge_in=>/existsP[i/eqP edge_t_i_e].
+move:(iffLR (correction_find_triangle tr (opposite_edge e) t') find_tr_e_t')=>/=[].
+rewrite/edge_in -edge_t_i_e/opposite_edge=>/existsP/=[j/eqP].
+rewrite-ffunP=> common_edge t'_in_tr_.
+rewrite (triangle_dist_invariant t target_pt i).
+rewrite (triangle_dist_invariant t' target_pt (j+1)).
+move: (common_edge 0).
+rewrite !ffunE/= -!addrA subrr addr0=> eq1.
+move: (common_edge 1).
+rewrite !ffunE=>/= eq2.
+rewrite eq1 eq2.
+apply: power_decrease.
+      rewrite -triangle_area_invariant.
+      by move:(oriented t)=>/implyP/(_ t_in_tr_).
+    rewrite -eq1 -eq2 addrA.
+    have -> : (t' j = t' ((j+1)-1)) by rewrite -addrA subrr addr0.
+    rewrite -triangle_area_invariant.
+    by move: (oriented t')=>/implyP/(_ t'_in_tr_).
+  move: sep_edge_t_e.
+  rewrite/separating_edge/separating_edge_i -edge_t_i_e.
+  case: ifP=>[H[]|_].
+    rewrite/edges_tr !ffunE -ffunP=>/(_ 0).
+    rewrite !ffunE=>/=/eqP h.
+    by move:(inj t)=>/forallP/(_ 0)/forallP/(_ i)/implyP/(_ t_in_tr_)
+                    /implyP/(_ h)/eqP <-.
+  case: ifP=>[H[]|_].
+    rewrite add0r/edges_tr !ffunE -ffunP=>/(_ 0).
+    rewrite !ffunE=>/=/eqP h.
+    by move:(inj t)=>/forallP/(_ 1)/forallP/(_ i)/implyP/(_ t_in_tr_)
+                    /implyP/(_ h)/eqP <-.
+  case: ifP=>[H[]|//].
+    rewrite /edges_tr !ffunE -ffunP=>/(_ 0).
+    rewrite !ffunE=>/=/eqP h.
+    by move:(inj t)=>/forallP/(_ (-1))/forallP/(_ i)/implyP/(_ t_in_tr_)
+                    /implyP/(_ h)/eqP <-.
+have not_in : ~ point_in (t' (j - 1)) t.
+  rewrite/point_in=>/existsP/=[] i0.
+  rewrite -(subrK i i0).
+  elim/elimI3: (i0 - i).
+      rewrite add0r -eq2=> h.
+      move:(inj t')=>/forallP/(_ (j+1))/forallP/(_ (j-1))/implyP/(_ t'_in_tr_)
+                      /implyP/(_ h).
+
 
 Lemma inj_edges_tr :
   forall (t : T), forall (i j : 'I_3), 
@@ -101,9 +388,6 @@ Proof.
 rewrite /point_in.
 by apply: exists_eqP.
 Qed.
-
-Definition edge_in (e : E) (t : T) : bool :=
-  [exists i : 'I_3, (edges_tr t i) == e].
 
 Lemma edge_in_exists (e : E) (t : T) :
   (edge_in e t) -> exists (i : 'I_3), (edges_tr t i) = e.
@@ -128,9 +412,6 @@ move => abs.
 by rewrite (starter_pt_triangle_area i) abs dupl_tr_area.
 Qed.
 
-Definition tr_dist (t : T) (p : P) :=
-  out_circle R (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))) (coords p).
-
 Lemma starter_pt_dist (i : 'I_3) (t : T) (p : P) : 
   tr_dist t p = out_circle R (coords (t i)) (coords (t (i + 1))) (coords (t (i + 1 + 1))) (coords p).
 Proof.
@@ -138,36 +419,6 @@ move: i.
 apply : elimI3; first by rewrite add0r.
   by rewrite p1p11 (inv_cycle_out_circle R).
 by rewrite p1p11 add0r -(inv_cycle_out_circle R).
-Qed.
-
-Fixpoint find_triangle_in_list (p : T -> bool) (tr_enum : list T) : option T :=
-  match tr_enum with
-  | nil => None
-  | t :: tail => if (p t) then Some t else find_triangle_in_list p tail
-  end.
-
-Lemma correc_find_triangle_in_list (p : T -> bool) (tr_enum : list T) :
-  forall (t : T), 
-  find_triangle_in_list p tr_enum = Some t -> (p t) /\ (t \in tr_enum).
-Proof.
-move => t.
-elim: tr_enum; first by[].
-move => a l HR.
-rewrite /find_triangle_in_list.
-case_eq (p a).
-  move => h0.
-  move /Some_inj => h1.
-  rewrite -h1.
-  split; first by[].
-  rewrite in_cons.
-  apply /orP.
-  by left.
-move => npa H.
-destruct HR as [H1 H2]=>//.
-split; first by[].
-rewrite in_cons.
-apply /orP.
-by right.
 Qed.
 
 Lemma unique_result (p : T -> bool) (tr_enum : list T) :
@@ -211,19 +462,7 @@ rewrite -(not_in t2 a l nta).
 by apply: H.
 Qed.
 
-Variable target_pt : P.
 
-Definition is_separating_edge (t : T) (i : 'I_3) :=
-  0 < tr_area R (coords (t i)) (coords target_pt) (coords (t (i + 1))).
-
-Definition separating_edge_i (t : T) (i : 'I_3) :=
-  if (is_separating_edge t i) then Some (edges_tr t i) 
-    else if (is_separating_edge t (i + 1)) then Some (edges_tr t (i + 1))
-    else if (is_separating_edge t (i + 1 + 1)) then Some (edges_tr t (i + 1 + 1))
-    else None.
-
-Definition separating_edge (t : T) :=
-  separating_edge_i t 0.
 
 Section triangulation.
 
@@ -290,8 +529,6 @@ move : h2.
 by rewrite eq_refl.
 Qed.
 
-Definition find_triangle_of_edge (e : E) : option T :=
-  find_triangle_in_list (edge_in e) (enum tr).
 
 Lemma correc_find_triangle (e : E) (t : T) :
   find_triangle_of_edge e = Some t <-> (edge_in e t) /\ (t \in tr).
@@ -426,36 +663,6 @@ move => h.
 apply: (with_i t (1 + 1)).
 by apply: i_2.
 Qed.
-
-Lemma separating_edge_in_triangle :
-  forall (e : E) (t : T),
-  separating_edge t = Some e -> edge_in e t.
-Proof.
-move => e t h.
-rewrite /edge_in.
-apply /existsP.
-rewrite /separating_edge /separating_edge_i in h.
-move: h.
-case: (is_separating_edge t).
-  move => h.
-  exists 0.
-  apply /eqP.
-  by apply : Some_inj h.
-case: (is_separating_edge t).
-  move => h.
-  exists 1.
-  apply /eqP.
-  by apply : Some_inj h.
-case: (is_separating_edge t).
-  move => h.
-  exists (1 + 1).
-  apply /eqP.
-  by apply : Some_inj h.
-by [].
-Qed.
-
-Definition triangle_measure (t : T) :=
-  power R (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))) (coords target_pt).
 
 Lemma starter_pt_measure (i : 'I_3) (t : T) (p : P) :
   triangle_measure t = power R (coords (t i)) (coords (t (i + 1))) (coords (t (i + 1 + 1))) (coords target_pt).

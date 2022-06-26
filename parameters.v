@@ -7,8 +7,6 @@ Open Scope ring_scope.
 
 Section parameters.
 
-Variable R : realDomainType.
-
 Variable E : finType.
 
 Variable T : finType.
@@ -35,7 +33,7 @@ Hypothesis separating_edge_in_triangle :
   forall (e : E) (t : T),
   separating_edge t = Some e -> edge_in e t.
 
-Definition triangulation_ := {set T}.
+Definition triangulation_ := { set T }.
 
 Variable is_tr : pred triangulation_.
 
@@ -181,7 +179,7 @@ Hypothesis delaunay_decrease : forall (t1 t2 : T) (e : E) (tr : triangulation),
   find_triangle_of_edge tr (opposite_edge e) = Some t2 ->
   relT t2 t1.
 
-Definition rel_lexi := rel_lexi [finType of triangulation] T rel_tr relT.
+Notation rel_lexi := (rel_lexi [finType of triangulation] T rel_tr relT).
 
 Definition walk_lt2 (tt1 tt2 : tr_T) := 
   rel_lexi (proj1_sig tt1) (proj1_sig tt2).
