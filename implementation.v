@@ -418,37 +418,45 @@ Definition not_in_edge (t : T) (e : E) : 'I_3 :=
 Notation find_triangle_inspect := (find_triangle_inspect _ _ is_tr
                                                 find_triangle_of_edge).
 
+Notation delaunay_inspect := (delaunay_inspect _ delaunay_criterion).
+
 Definition flip_t (e : E) (tr : triangulation) (t : T) : T :=
   if find_triangle_of_edge tr (opposite_edge e) is Some t' then
+    if delaunay_criterion t t' then t else
     let i := not_in_edge t e in
     let j := not_in_edge t' (opposite_edge e) in
     [ffun i0 : 'I_3 => if i0 == i then t i else
                         if i0 == i + 1 then t' j else t' (j + 1)]
   else t.
 
+Definition flip_tr_ (e : E) (tr : triangulation) (t t' : T) :=
+  (flip_t e tr t) |: ((flip_t e tr t')|: (proj1_sig tr)) :\ t :\t'.
+
 Lemma correct_flip_t :
-  forall (e : E) (tr : triangulation) (t1 t2 : T),
-  find_triangle_of_edge tr e = Some t1 ->
-  find_triangle_of_edge tr (opposite_edge e) = Some t2 ->
-  is_tr ((flip_t e tr t2) |: ((flip_t e tr t1) |: (proj1_sig tr)) :\ t1 :\ t2).
+  forall (e : E) (tr : triangulation) (t t' : T),
+    find_triangle_of_edge tr e = Some t ->
+    find_triangle_of_edge tr (opposite_edge e) = Some t' ->
+    delaunay_criterion t t' = false ->
+    is_tr (flip_tr_ e tr t t').
 Proof.
-move=> e [tr1_ is_tr_tr1_] t1 t2/= find_e_t1 find_oppe_t2.
-rewrite/is_tr/orientation/is_triangulation/flip_t find_oppe_t2/=.
+move=> e [tr'_ is_tr_tr'_] t t' find_e_t find_oppe_t' not_del.
+rewrite/flip_tr_/=/flip_t find_oppe_t' not_del/=.
+rewrite/is_tr/orientation/is_triangulation.
 apply/andP; split.
-  apply/forallP=>/= t.
-  apply/implyP=>/setU1P[->|/setD1P[t_t2/setD1P[t_t1/setU1P[|]]]].
-      
-Search "setU1".
-Check setD1P. Check setU1P.
+  apply/forallP=>/= t1.
+  apply/implyP=>/setU1P[eqt1|/setD1P[t1_not_t']/setD1P[t1_not_t]/setU1P[]].
+      rewrite eqt1/triangle_area.
+
+Search "set" "U" "1" outside finmap.
 
 
-Definition flip_tr (e : E) (tr : triangulation) : triangulation :=
-  if find_triangle_of_edge tr e is Some t1 then
-    if find_triangle_of_edge tr (opposite_edge e) is Some t2 then
-      let t1' := flip_t e tr t1 in
-      let t2' := flip_t e tr t2 in
-      let tr' := t2' |: (t1' |: (proj1_sig tr)) :\ t1 :\ t2 in
-      (exist _ tr' (test tr'))
+
+Definition flip_tr (e : E) (tr : triangulation) :=
+  if find_triangle_inspect tr e is exist (Some t1) eq1 then
+    if find_triangle_inspect tr (opposite_edge e) is exist (Some t2) eq2 then
+      if delaunay_inspect t1 t2 is exist false eq3 then
+        exist _ (flip_tr_ e tr t1 t2) (correct_flip_t eq1 eq2 eq3)
+      else tr
     else tr
   else tr.
 

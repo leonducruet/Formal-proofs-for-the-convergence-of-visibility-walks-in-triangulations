@@ -32,25 +32,29 @@ Qed.
 Lemma inv_cycle_tr_area (A B C : R * R) :
   tr_area A B C = tr_area C A B.
 Proof.
-move: A B C.
-move => [a_x a_y][b_x b_y][c_x c_y].
 by rewrite !poly_area; field.
 Qed.
 
 Lemma flipr_tr_area (A B C : R * R) :
   tr_area A B C = - tr_area A C B.
 Proof.
-move: A B C.
-move => [a_x a_y][b_x b_y][c_x c_y].
 by rewrite !poly_area; field.
 Qed.
 
 Lemma dupl_tr_area (A B : R * R) :
   tr_area A A B = 0.
 Proof.
-move: A B.
-move => [a_x a_y][b_x b_y].
 by rewrite !poly_area; field.
+Qed.
+
+Definition translation (A O : R * R) :=
+  (A.1 - O.1, A.2 - O.2).
+
+Lemma area_translation (A B C O : R * R) :
+  tr_area A B C =
+  tr_area (translation A O) (translation B O) (translation C O).
+Proof.
+by rewrite !poly_area/translation/=; field.
 Qed.
 
 Definition out_circle (A B C D : R * R) :=
@@ -102,6 +106,14 @@ move => [a_x a_y][b_x b_y][c_x c_y][d_x d_y][e_x e_y].
 rewrite/power !poly_out_circle !poly_area/=.
 move=> ABC ADB; field.
 by apply/andP.
+Qed.
+
+Lemma power_translation (A B C D O : R * R) :
+  tr_area A B C != 0 ->
+  power A B C D =
+    power (translation A O) (translation B O) (translation C O) (translation D O).
+Proof.
+by rewrite /power -area_translation !poly_out_circle/translation=>ABC/=; field.
 Qed.
 
 Definition tr_measure (A B C : R * R) :=

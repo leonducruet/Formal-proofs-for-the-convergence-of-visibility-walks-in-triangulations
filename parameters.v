@@ -159,6 +159,10 @@ Definition tr_T := {ttr : triangulation * T | ttr.2 \in (proj1_sig ttr.1)}.
 
 Variable delaunay_criterion : T -> T -> bool.
 
+Definition delaunay_inspect (t1 t2 : T) :
+  {b : bool | delaunay_criterion t1 t2 = b} :=
+  exist _ (delaunay_criterion t1 t2) erefl.
+
 Variable flip_t : E -> triangulation -> T -> T.
 
 Variable flip_tr : E -> triangulation -> triangulation.
@@ -199,10 +203,6 @@ Instance walk_lt2_wf : WellFounded walk_lt2.
 Proof.
 rewrite /WellFounded; apply walk_lt2_well_founded.
 Qed.
-
-Definition delaunay_inspect (t1 t2 : T) :
-  {b : bool | delaunay_criterion t1 t2 = b} :=
-  exist _ (delaunay_criterion t1 t2) erefl.
 
 Equations walk2 (current : tr_T) :
   triangulation * (T + E)
