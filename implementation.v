@@ -288,13 +288,13 @@ Qed.
 Definition point_in (p : P) (t : T) : bool :=
   [exists i : 'I_3, (t i) == p].
 
+Section delaunay_walk.
+
 Variable tr_ : triangulation_.
 
 Hypothesis tr_is_triangulation : is_tr tr_.
 
 Definition tr : triangulation := (exist _ tr_ tr_is_triangulation).
-
-Section delaunay_walk.
 
 Hypothesis delaunay :
   forall (t1 t2 : T) (i : 'I_3), t1 \in tr_ -> t2 \in tr_ ->
@@ -413,10 +413,7 @@ Definition delaunay_criterion (t1 t2 : T) :=
 Hypothesis test : forall t : triangulation_, is_tr t.
 
 Definition not_in_edge (t : T) (e : E) : 'I_3 :=
-  if t 0 == e 0 then 1 + 1 else if t 0 == e 1 then 1 else 0. 
-
-Notation find_triangle_inspect := (find_triangle_inspect _ _ is_tr
-                                                find_triangle_of_edge).
+  if t 0 == e 0 then 1 + 1 else if t 0 == e 1 then 1 else 0.
 
 Notation delaunay_inspect := (delaunay_inspect _ delaunay_criterion).
 
@@ -439,16 +436,38 @@ Lemma correct_flip_t :
     delaunay_criterion t t' = false ->
     is_tr (flip_tr_ e tr t t').
 Proof.
-move=> e [tr'_ is_tr_tr'_] t t' find_e_t find_oppe_t' not_del.
+move=> e tr t t' find_e_t find_oppe_t' not_del.
+move:(proj2_sig tr)=>/andP[].
+rewrite/orientation/is_triangulation=>/forallP/= oriented/forallP/= triang.
 rewrite/flip_tr_/=/flip_t find_oppe_t' not_del/=.
 rewrite/is_tr/orientation/is_triangulation.
+move: (iffLR (correction_find_triangle _ _ _) find_e_t)=>/=[].
+rewrite/edge_in=>/existsP[i]/eqP.
+rewrite/edges_tr ffunE -ffunP=>/= e_x t_in_tr.
+move: (iffLR (correction_find_triangle _ _ _) find_oppe_t')=>/=[].
+rewrite/opposite_edge/edge_in=>/existsP[j]/eqP.
+rewrite/edges_tr ffunE -ffunP=>/= oppe_x t'_in_tr.
+move: (e_x 0) (e_x 1) (oppe_x 0) (oppe_x 1).
+rewrite !ffunE/= add0r I2_2_is_0=>tie0 tipe1 t'je1 t'jpe0.
 apply/andP; split.
   apply/forallP=>/= t1.
-  apply/implyP=>/setU1P[eqt1|/setD1P[t1_not_t']/setD1P[t1_not_t]/setU1P[]].
-      rewrite eqt1/triangle_area.
-
-Search "set" "U" "1" outside finmap.
-
+  apply/implyP=>/setU1P[->|/setD1P[_]/setD1P[_]/setU1P[]].
+      rewrite (triangle_area_invariant _ (not_in_edge t e)) !ffunE !eq_refl
+        -subr_eq0 -(addrC 1) -addrA subrr addr0 oner_eq0 addrC addrA -subr_eq0
+        -addrA subrr addr0 -[X in 1 + X == 0](addrK 1 1) !addrA I3_3_is_0
+        subr_eq0 eq_sym oner_eq0 -subr_eq0 -(addrA 1) -addrA subrr addr0
+        oner_eq0 inv_cycle_tr_area.
+      rewrite/not_in_edge/opposite_edge !ffunE add0r.
+      case: ifP=>/eqP.
+        rewrite I3_3_is_0 -t'je1=>/(injective_triangles t'_in_tr) eqj0.
+        case: ifP=>/eqP.
+          rewrite -tie0=>/(injective_triangles t_in_tr) eqi0.
+          rewrite eqj0 t'je1 -tipe1 -eqi0 add0r.
+          apply: (ccw_flip R _ _ (coords (t 0))).
+              rewrite inv_cycle_tr_area.
+              by move: (oriented t)=>/implyP/(_ t_in_tr).
+            rewrite -{1}(add0r 1) eqi0 tie0 tipe1 -t'jpe0 -t'je1 -eqj0 add0r.
+            by move: (oriented t')=>/implyP/(_ t'_in_tr).
 
 
 Definition flip_tr (e : E) (tr : triangulation) :=
