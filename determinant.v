@@ -118,6 +118,12 @@ move => [a_x a_y][b_x b_y][c_x c_y][d_x d_y].
 by rewrite !poly_out_circle; field.
 Qed.
 
+Lemma flip_out_circle (A B C D : R * R) :
+  out_circle A B C D = out_circle A C D B.
+Proof.
+by rewrite !poly_out_circle; field.
+Qed.
+
 Lemma out_circle_translation (A B C D O : R * R) :
   out_circle A B C D =
   out_circle (translation A O) (translation B O) (translation C O) (translation D O).

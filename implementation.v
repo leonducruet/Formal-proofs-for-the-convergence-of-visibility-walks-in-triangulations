@@ -410,8 +410,6 @@ Section general_walk.
 Definition delaunay_criterion (t1 t2 : T) :=
   [forall i : 'I_3, ( ~~ point_in (t2 i) t1) ==> (0 < triangle_dist t1 (t2 i))].
 
-Hypothesis test : forall t : triangulation_, is_tr t.
-
 Definition not_in_edge (t : T) (e : E) : 'I_3 :=
   if t 0 == e 0 then 1 + 1 else if t 0 == e 1 then 1 else 0.
 
@@ -447,6 +445,86 @@ Definition flip_t (e : E) (tr : triangulation) (t : T) : T :=
 Definition flip_tr_ (e : E) (tr : triangulation) (t t' : T) :=
   (flip_t e tr t) |: ((flip_t (opposite_edge e) tr t')|: (proj1_sig tr)) :\ t :\t'.
 
+Lemma oriented_flip (t t' : T) (tr : triangulation) (i j : 'I_3) :
+  t i = t' (j + 1) -> t (i + 1) = t' j ->
+  t \in (proj1_sig tr) -> t' \in (proj1_sig tr) ->
+  delaunay_criterion t t' = false ->
+  0 < tr_area (coords (t' j)) (coords (t (i + 1 + 1))) (coords (t' (j + 1 + 1))).
+Proof.
+move: (proj2_sig tr)=>/andP[/forallP/=oriented/forallP/=triang] tit'jp tipt'j
+                        t_in_tr t'_in_tr/forallP not_del.
+apply: (ccw_flip _ _ _ (coords (t' (j + 1)))).
+    rewrite -tipt'j -tit'jp inv_cycle_tr_area -triangle_area_invariant.
+    by move: (oriented t)=>/implyP/(_ t_in_tr).
+  rewrite -triangle_area_invariant.
+  by move:(oriented t')=>/implyP/(_ t'_in_tr).
+rewrite -tipt'j -tit'jp leNgt.
+apply/negP=>H.
+move: not_del; apply=>i0.
+apply/implyP.
+rewrite -(addrNK j i0).
+elim/elimI3: (i0 - j).
+    rewrite add0r=>/existsP[].
+    exists (i + 1).
+    by apply/eqP.
+  rewrite addrC=>/existsP[].
+  exists i.
+  by apply/eqP.
+rewrite addrC addrA (triangle_dist_invariant _ _ i) pmulr_rgt0 ?invr_gt0.
+  rewrite -triangle_area_invariant=>_.
+  by move: (oriented t)=>/implyP/(_ t_in_tr).
+by rewrite -inv_cycle_out_circle.
+Qed.
+
+Lemma triangulation_flip (t t' : T) (tr : triangulation) (i j : 'I_3) :
+  t \in (proj1_sig tr) ->
+  t' \in (proj1_sig tr) ->
+  t i = t' (j + 1) -> t (i + 1) = t' j ->
+  delaunay_criterion t t' -> delaunay_criterion t' t.
+Proof.
+move: (proj2_sig tr)=>/andP[/forallP/=oriented/forallP/=triang] t_in_tr t'_in_tr
+                      tit'jp tipt'j/forallP del.
+apply/forallP=>/= i0.
+apply/implyP=>/negP.
+rewrite -(addrNK i i0) addrC.
+elim/elimI3: (i0 - i).
+    rewrite addr0 tit'jp=>-[].
+    by apply/existsP; exists (j+1).
+  rewrite tipt'j=>-[].
+  by apply/existsP; exists j.
+rewrite (triangle_dist_invariant _ _ j)/power=> not_in.
+rewrite pmulr_rgt0 ?invr_gt0.
+  rewrite -triangle_area_invariant.
+  by move:(oriented t')=>/implyP/(_ t'_in_tr).
+rewrite -flip_out_circle -tit'jp -tipt'j addrA -(@pmulr_rgt0 _ (
+    (tr_area (coords (t i)) (coords (t (i+1))) (coords (t (i+1+1))))^-1));
+    first last.
+  rewrite invr_gt0 -triangle_area_invariant.
+  by move: (oriented t)=>/implyP/(_ t_in_tr).
+rewrite mulrC inv_cycle_out_circle -/(power _ _ _ _) -triangle_dist_invariant.
+move: (del (j + 1 + 1))=>/implyP.
+apply.
+apply/existsP=>-[i1].
+rewrite -(addrNK i i1) addrC.
+elim/elimI3: (i1 - i); rewrite ?addr0=>h.
+    move: (triang t)=>/forallP/(_ t')/forallP/(_ i)/forallP/(_ (j+1+1))/implyP
+                      /(_ t_in_tr)/implyP/(_ t'_in_tr)/implyP/(_ h)/implyP.
+    rewrite -!addrA (addrA 1) I3_3_is_0 addr0.
+    move: tipt'j=>/eqP h1/(_ h1)/eqP eqtt'.
+    apply: not_in.
+    rewrite eqtt'.
+    by apply/existsP; exists (i + (1+1)).
+  move: (triang t)=>/forallP/(_ t')/forallP/(_ i)/forallP/(_ (j+1))/implyP
+                      /(_ t_in_tr)/implyP/(_ t'_in_tr)/implyP.
+  move: tit'jp=>/eqP h1/(_ h1)/implyP/(_ h)/eqP eqtt'.
+  apply: not_in.
+  rewrite eqtt'.
+  by apply/existsP; exists (i + (1+1)).
+apply: not_in.
+move:h=>/eqP ->.
+by apply/existsP; exists (j+1+1).
+Qed.
+
 Lemma correct_flip_t :
   forall (e : E) (tr : triangulation) (t t' : T),
     find_triangle_of_edge tr e = Some t ->
@@ -476,40 +554,47 @@ rewrite/opposite_edge !ffunE  add0r I2_2_is_0 in t'joppe0 t'jpoppe1.
 apply/andP; split.
   apply/forallP=>/= t1.
   apply/implyP=>/setU1P[->|/setD1P[/negP t1_not_t']
-                  /setD1P[/negP t1_not_t]/setU1P[]].
+                  /setD1P[/negP t1_not_t]/setU1P[|t1_in_tr]].
       rewrite (triangle_area_invariant _ (i + 1)) !ffunE -subr_eq addrK eq_sym
       -subr_eq0 addrC addrA addNr/= eq_sym -subr_eq0 addrC -(addrA (i + 1))
        (addrA (-(i+1))) addNr/= !eq_refl addrA (addrC (i+1+1)) -subr_eq0 addrK/=
        (addrC (j + 1 + 1)) {1}(addrC (j + 1)) {1}(addrC j) !addrA I3_3_is_0 add0r.
-      apply: (ccw_flip _ _ _ (coords (t' (j + 1)))).
-          rewrite t'joppe0 t'jpoppe1 -tipe1 -tie0 inv_cycle_tr_area 
-                -triangle_area_invariant.
-          by move: (oriented t)=>/implyP/(_ t_in_tr).
-        rewrite -triangle_area_invariant.
-        by move: (oriented t')=>/implyP/(_ t'_in_tr).
-      rewrite t'joppe0 -tipe1 t'jpoppe1 -tie0 leNgt.
-      apply/negP=>H.
-      move: not_del=>/forallP/=; apply=>i0.
-      apply/implyP.
-      rewrite -(addrNK j i0).
-      elim/elimI3: (i0 - j)=>[/existsP[]|/existsP[]|_].
-          exists (i + 1).
-          by rewrite add0r tipe1 -t'joppe0.
-        exists i.
-        by rewrite addrC t'jpoppe1 -tie0.
-      rewrite addrC addrA (triangle_dist_invariant _ _ i) pmulr_rgt0.
-        rewrite invr_gt0 -triangle_area_invariant.
-        by move: (oriented t)=>/implyP/(_ t_in_tr).
-      by rewrite -inv_cycle_out_circle.
+      apply (@oriented_flip _ _ tr)=>//.
+        by rewrite tie0 -t'jpoppe1.
+      by rewrite tipe1 -t'joppe0.
     case find_e_t1': (find_triangle_of_edge _ _)=>[t1'|].
-    move: 
-    move: (iffLR (correction_find_triangle _ _ _) find_e_t1').
-    move: 
-    case: ifP=>[_/eqP/t1_not_t'//|not_del_t'_t1'->].
-    rewrite (triangle_area_invariant _ 
-Search GRing.inv Order.lt 0.
-      
-Search (_ == _) GRing.add inside GRing.
+      move: (iffLR (correction_find_triangle _ _ _) find_e_t1')=>[]/existsP/=[i']
+                                            /eqP.
+      rewrite -ffunP/edges_tr ffunE=>/=e_x' t1'_in_tr.
+      move: (triang t)=>/forallP/(_ t1')/forallP/(_ i)/forallP/(_ i')/implyP
+                      /(_ t_in_tr)/implyP/(_ t1'_in_tr).
+      rewrite tie0 -(e_x' 0) ffunE/=eq_refl/=tipe1 -(e_x' 1) ffunE/=eq_refl=>
+                          /=/eqP<-.
+      case: ifP=>[_ /eqP/t1_not_t'//|not_del'->].
+      rewrite (not_in_edge_invariant t_in_tr tie0 tipe1)
+                (triangle_area_invariant _ (j + 1 + 1))!ffunE/= eq_refl -subr_eq0
+                (addrC (j+1+1)) -(addrA 1) subrr/=eq_refl -(addrA 1)
+                (addrC (j+1+1)) (addrA 1) -subr_eq0 -(addrA (1 + 1)) subrr/=
+                -(addrA 1) -subr_eq0 -(addrA 1) subrr/=-3!addrA I3_3_is_0 addr0
+                !addrA inv_cycle_tr_area.
+      apply: (@oriented_flip _ _ tr)=>//.
+        by rewrite t'joppe0 tipe1.
+      by rewrite t'jpoppe1 tie0.
+    by move=>/eqP/t1_not_t'.
+  by move:(oriented t1)=>/implyP/(_ t1_in_tr).
+apply/forallP=>/=t1.
+apply/forallP=>/=t2.
+apply/forallP=>/=i0.
+apply/forallP=>/=j0.
+apply/implyP=>/setU1P[->|/setD1P[/negP t1_not_t']
+                  /setD1P[/negP t1_not_t]/setU1P[|t1_in_tr]].
+    apply/implyP=>/setU1P[->|/setD1P[/negP t1_not_t']
+                  /setD1P[/negP t1_not_t]/setU1P[|t2_in_tr]].
+        rewrite eq_refl.
+        apply/implyP=>_.
+        by apply/implyP.
+      case find_e_t2: (find_triangle_of_edge _ _)=>[t2'|].
+        
 
 Definition flip_tr (e : E) (tr : triangulation) :=
   if find_triangle_inspect tr e is exist (Some t1) eq1 then
