@@ -45,14 +45,15 @@ Hypothesis rel_tr_trans : transitive rel_tr.
 
 Hypothesis rel_tr_irrefl : irreflexive rel_tr.
 
-Variable find_triangle_of_edge : triangulation -> E -> option T.
+Variable find_triangle_of_edge : triangulation_ -> E -> option T.
 
 Hypothesis correction_find_triangle :
   forall (tr : triangulation) (e : E) (t : T),
-  find_triangle_of_edge tr e = Some t <-> (edge_in e t) /\ (t \in (proj1_sig tr)).
+  find_triangle_of_edge (proj1_sig tr) e = Some t <->
+      (edge_in e t) /\ (t \in (proj1_sig tr)).
 
 Lemma invariant_find_triangle_of_edge : forall (tr : triangulation) (e : E) (t : T),
-   find_triangle_of_edge tr e = Some t -> t \in (proj1_sig tr).
+   find_triangle_of_edge (proj1_sig tr) e = Some t -> t \in (proj1_sig tr).
 Proof.
 by move => tr e t; rewrite (correction_find_triangle tr); case.
 Qed.
@@ -85,25 +86,25 @@ Qed.
 
 Lemma edge_in_find_triangle_of_edge : forall (e : E) (t : T),
    t \in (proj1_sig tr) -> 
-   edge_in e t -> find_triangle_of_edge tr e = Some t.
+   edge_in e t -> find_triangle_of_edge (proj1_sig tr) e = Some t.
 Proof.
 move => e t h1 h2.
-by apply (correction_find_triangle tr e t).
+by apply (correction_find_triangle _ e t).
 Qed.
 
 Hypothesis decrease_condition :
   forall (e : E) (t t' : T),
   t \in (proj1_sig tr) ->
   separating_edge t = Some e -> 
-    find_triangle_of_edge tr (opposite_edge e) = Some t' -> relT t' t.
+    find_triangle_of_edge (proj1_sig tr) (opposite_edge e) = Some t' -> relT t' t.
 
 Definition separating_inspect (t : T) :
   {e' : option E | separating_edge t = e'} :=
  exist _ (separating_edge t) erefl.
 
 Definition find_triangle_inspect (e : E) :
-  {t' : option T | find_triangle_of_edge tr e = t'} :=
-  exist _ (find_triangle_of_edge tr e) erefl.
+  {t' : option T | find_triangle_of_edge (proj1_sig tr) e = t'} :=
+  exist _ (find_triangle_of_edge (proj1_sig tr) e) erefl.
 
 Equations walk (current_triangle : {t : T | t \in (proj1_sig tr)})
    : T + E by wf current_triangle walk_lt :=
@@ -181,7 +182,7 @@ Hypothesis non_delaunay_decrease : forall (t1 t2 : T) (tr : triangulation) (e : 
 Hypothesis delaunay_decrease : forall (t1 t2 : T) (e : E) (tr : triangulation),
   delaunay_criterion t1 t2 -> t1 \in (proj1_sig tr) ->
   separating_edge t1 = Some e ->
-  find_triangle_of_edge tr (opposite_edge e) = Some t2 ->
+  find_triangle_of_edge (proj1_sig tr) (opposite_edge e) = Some t2 ->
   relT t2 t1.
 
 Notation rel_lexi := (rel_lexi [finType of triangulation] T rel_tr relT).
@@ -238,9 +239,9 @@ apply/orP.
 left.
 apply: (non_delaunay_decrease t t2)=>//.
       by rewrite e.
-    by rewrite (correction_find_triangle tr) in eq2; move:eq2=>[].
+    by rewrite (correction_find_triangle _) in eq2; move:eq2=>[].
   by apply: separating_edge_in_triangle.
-by rewrite (correction_find_triangle tr) in eq2; move:eq2=>[].
+by rewrite (correction_find_triangle _) in eq2; move:eq2=>[].
 Qed.
 
 Lemma walk2_result_edge :
