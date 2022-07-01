@@ -71,6 +71,14 @@ Variable target_pt : P.
 
 Notation power := (power R).
 
+Notation out_circle := (out_circle R).
+
+Hypothesis not_concyclic :
+  forall A B C D : P,
+  tr_area (coords A) (coords B) (coords C) != 0 ->
+  out_circle (coords A) (coords B) (coords C) (coords D) = 0 ->
+  D \in [set A; B; C].
+
 Definition triangle_dist (t : T) (p : P) :=
   power (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))) (coords p).
 
@@ -292,17 +300,26 @@ Notation tr_measure := (tr_measure R).
 Definition triangulation_measure (t : T) :=
   tr_measure (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))).
 
+Lemma triangulation_measure_invariant (t : T) (i : 'I_3) :
+  triangulation_measure t =
+  tr_measure (coords (t i)) (coords (t (i+1))) (coords (t (i+1+1))).
+Proof.
+elim/elimI3: i; first by[].
+  by rewrite I3_3_is_0 inv_cycle_measure.
+by rewrite I3_3_is_0 -inv_cycle_measure.
+Qed.
+
 Definition measure_triangulation (tr : triangulation) :=
   \sum_(t in (proj1_sig tr)) triangulation_measure t.
 
 Definition rel_tr (tr tr' : triangulation) :=
-  measure_triangulation tr < measure_triangulation tr'.
+  measure_triangulation tr > measure_triangulation tr'.
 
 Lemma rel_tr_trans : transitive rel_tr.
 Proof.
 move=> y x z.
-rewrite/rel_tr.
-exact: lt_trans.
+rewrite/rel_tr=>yx zy.
+apply: (lt_trans zy yx).
 Qed.
 
 Lemma rel_tr_irreflexive : irreflexive rel_tr.
@@ -691,6 +708,13 @@ Lemma non_delaunay_decrease :
   rel_tr (flip_tr e tr) tr.
 Proof.
 move=>t1 t2 tr e not_del t1_in_tr t2_in_tr e_in_t1 oppe_in_t2.
+move: (e_in_t1) (oppe_in_t2)=>/existsP[i]/eqP.
+rewrite -ffunP ffunE=>coords_t1/existsP[j]/eqP.
+rewrite/opposite_edge -ffunP !ffunE=>coords_t2.
+move:(coords_t1 0) (coords_t1 1) (coords_t2 0) (coords_t2 1).
+rewrite !ffunE add0r I2_2_is_0=>/=t1i t1ip t2j t2jp.
+move: (t1i) (t1ip).
+rewrite -t2j -t2jp=>t1i_t2 t1ip_t2.
 rewrite/rel_tr/measure_triangulation/flip_tr.
 case: find_triangle_inspect=>-[t|] find_e.
   move: (iffRL (correction_find_triangle tr e t1) (conj e_in_t1 t1_in_tr)).
@@ -706,7 +730,14 @@ case: find_triangle_inspect=>-[t|] find_e.
               -big_setD1/=.
         rewrite -(addrNK (triangulation_measure t) (_-_))-addrA-big_setD1/=.
           rewrite big_setU1/=.
-            rewrite-!/(measure_triangulation _).
+            rewrite-!/(measure_triangulation _)/flip_t_ find_oppe
+              involution_opposite_edge find_e eq1 eq2
+              -(delaunay_eq t1_in_tr t2_in_tr t1i_t2 t1ip_t2)
+              (not_in_edge_invariant t1_in_tr t1i t1ip)
+              (@not_in_edge_invariant tr t2 (opposite_edge e) j t2_in_tr)
+              !ffunE ?I2_2_is_0=>//.
+            rewrite -eq1 -eq2 ndel (triangulation_measure_invariant t i)
+              (triangulation_measure_invariant t' j)/triangulation_measure !ffunE/=.
 Admitted.
 
 Lemma delaunay_decrease :
