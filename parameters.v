@@ -160,18 +160,16 @@ Definition tr_T := {ttr : triangulation * T | ttr.2 \in (proj1_sig ttr.1)}.
 
 Variable delaunay_criterion : T -> T -> bool.
 
-Definition delaunay_inspect (t1 t2 : T) :
-  {b : bool | delaunay_criterion t1 t2 = b} :=
-  exist _ (delaunay_criterion t1 t2) erefl.
-
 Variable flip_t : E -> triangulation -> T -> T.
 
 Variable flip_tr : E -> triangulation -> triangulation.
 
 Hypothesis correct_flip :
-  forall (e : E) (ttr : tr_T),
-  flip_t e (proj1_sig ttr).1 (proj1_sig ttr).2 \in
-        proj1_sig (flip_tr e (proj1_sig ttr).1).
+  forall (e : E) (tr : triangulation) (t : T),
+  t \in (proj1_sig tr) ->
+  edge_in e t ->
+  flip_t e tr t \in
+        proj1_sig (flip_tr e tr).
 
 Hypothesis non_delaunay_decrease : forall (t1 t2 : T) (tr : triangulation) (e : E),
   ~~ delaunay_criterion t1 t2 -> t1 \in (proj1_sig tr) -> t2 \in (proj1_sig tr) ->
@@ -205,6 +203,10 @@ Proof.
 rewrite /WellFounded; apply walk_lt2_well_founded.
 Qed.
 
+Definition delaunay_inspect (t1 t2 : T) :
+  {b : bool | delaunay_criterion t1 t2 = b} :=
+  exist _ (delaunay_criterion t1 t2) erefl.
+
 Equations walk2 (current : tr_T) :
   triangulation * (T + E)
   by wf current walk_lt2 :=
@@ -217,7 +219,8 @@ Equations walk2 (current : tr_T) :
               | exist _ false _ := walk2 (exist _
               (flip_tr edge (proj1_sig current).1,
                   flip_t edge (proj1_sig current).1 (proj1_sig current).2)
-                                              (correct_flip edge current));
+                   (correct_flip _ _ _ (proj2_sig current)
+                            (separating_edge_in_triangle _ _ eq1)));
               | exist _ true _ := walk2 (exist _ ((proj1_sig current).1, t2)
                                          (invariant_find_triangle_of_edge _ _ _ eq2))};
           | exist _ None _ := ((proj1_sig current).1, inr (opposite_edge edge))};

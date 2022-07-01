@@ -293,7 +293,7 @@ Definition triangulation_measure (t : T) :=
   tr_measure (coords (t 0)) (coords (t 1)) (coords (t (1 + 1))).
 
 Definition measure_triangulation (tr : triangulation) :=
-  \sum_(t <- enum (proj1_sig tr)) triangulation_measure t.
+  \sum_(t in (proj1_sig tr)) triangulation_measure t.
 
 Definition rel_tr (tr tr' : triangulation) :=
   measure_triangulation tr < measure_triangulation tr'.
@@ -356,13 +356,14 @@ Notation walk_lt := (walk_lt [finType of T] relT is_tr tr).
 
 Notation power_decrease := (power_decrease R).
 
-Lemma decrease_condition :
+Lemma decrease_condition_ :
   forall (e : E) (t t' : T),
+  (forall i : 'I_3, (~ point_in (t' i) t) -> 0 < triangle_dist t (t' i)) ->
   t \in tr_ ->
   separating_edge t = Some e -> 
     find_triangle_of_edge tr_ (opposite_edge e) = Some t' -> relT t' t.
 Proof.
-move=> e t t' t_in_tr_ sep_edge_t_e find_tr_e_t'.
+move=> e t t' del t_in_tr_ sep_edge_t_e find_tr_e_t'.
 rewrite/relT/triangle_measure -subr_gt0.
 move:(separating_edge_in_triangle sep_edge_t_e).
 rewrite/edge_in=>/existsP[i/eqP edge_t_i_e].
@@ -418,7 +419,7 @@ have not_in : ~ point_in (t' (j + 1 + 1)) t.
   apply/andP.
   split; first by[].
   exact: (@oriented_triangles tr t').
-move:(delaunay t_in_tr_ t'_in_tr_ not_in).
+move:(del (j+1+1) not_in).
 rewrite (triangle_dist_invariant _ _ i)/power.
 move: (@oriented_triangles tr t t_in_tr_).
 rewrite (triangle_area_invariant _ i)=>h.
@@ -426,6 +427,19 @@ rewrite -(pmulr_lgt0 _ h) -mulrA [X in 0 < _ * X]mulrC mulfV;
   first by rewrite mulr1 !addrA.
 apply/negP=>/eqP H.
 by move: h; rewrite H lt_irreflexive.
+Qed.
+
+Lemma decrease_condition :
+  forall (e : E) (t t' : T),
+  t \in tr_ ->
+  separating_edge t = Some e -> 
+    find_triangle_of_edge tr_ (opposite_edge e) = Some t' -> relT t' t.
+Proof.
+move=>e t t' t_in_tr sep find.
+apply: (@decrease_condition_ e t t')=>//.
+move=>i.
+apply: delaunay; first by[].
+by move: (iffLR (correction_find_triangle tr (opposite_edge e) t') find)=>[].
 Qed.
 
 Definition delaunay_walk :=
@@ -631,11 +645,12 @@ Notation find_triangle_inspect := (find_triangle_inspect _ _ is_tr
 Notation delaunay_inspect := (delaunay_inspect _ delaunay_criterion).
 
 Definition flip_tr (e : E) (tr : triangulation) :=
-  if find_triangle_inspect tr e is exist (Some t1) eq1 then
+  if find_triangle_inspect tr e is @exist _ _ (Some t1) eq1 then
     if find_triangle_inspect tr (opposite_edge e) is
            exist (Some t2) eq2 then
       if delaunay_inspect t1 t2 is exist false eq3 then
-        exist _ (flip_tr_ e (proj1_sig tr) t1 t2) (correct_flip_t eq1 eq2 eq3)
+        exist _ (flip_tr_ e (proj1_sig tr) t1 t2)
+            (@correct_flip_t e tr t1 t2 eq1 eq2 eq3)
       else tr
     else tr
   else tr.
@@ -643,12 +658,69 @@ Definition flip_tr (e : E) (tr : triangulation) :=
 Notation tr_T := (tr_T _ is_tr).
 
 Lemma correct_flip :
-  forall (e : E) (ttr : tr_T),
-  flip_t e (proj1_sig ttr).1 (proj1_sig ttr).2 \in
-        proj1_sig (flip_tr e (proj1_sig ttr).1).
+  forall (e : E) (tr : triangulation) (t : T),
+  t \in (proj1_sig tr) ->
+  edge_in e t ->
+  flip_t e tr t \in
+        proj1_sig (flip_tr e tr).
 Proof.
-move=> e [[tr t]/= t_in_tr].
-rewrite/flip_t/flip_t_.
+move=>e tr t t_in_tr e_in_t.
+rewrite/flip_tr.
+case: find_triangle_inspect=>-[t1|] find_e.
+  move: (iffRL (correction_find_triangle tr e t) (conj e_in_t t_in_tr)).
+  rewrite find_e=>-[eqt1_t].
+  case: find_triangle_inspect=>-[t2|] find_oppe.
+    move: (iffLR (correction_find_triangle tr (opposite_edge e) t2) find_oppe)=>
+              [/existsP[i2]/eqP].
+    rewrite/edges_tr-ffunP !ffunE=>coords_t2 t2_in_tr.
+    case: delaunay_inspect=>-[del|not_del].
+      by rewrite -eqt1_t/flip_t/flip_t_ find_oppe del eqt1_t.
+    rewrite/flip_tr_.
+    apply/setU1P; left.
+    by rewrite eqt1_t.
+  by rewrite/flip_t/flip_t_ find_oppe.
+move: (iffRL (correction_find_triangle tr e t) (conj e_in_t t_in_tr)).
+by rewrite find_e.
+Qed.
+
+Lemma non_delaunay_decrease :
+  forall (t1 t2 : T) (tr : triangulation) (e : E),
+  ~~ delaunay_criterion t1 t2 -> t1 \in (proj1_sig tr) -> t2 \in (proj1_sig tr) ->
+  edge_in e t1 ->
+  edge_in (opposite_edge e) t2 ->
+  rel_tr (flip_tr e tr) tr.
+Proof.
+move=>t1 t2 tr e not_del t1_in_tr t2_in_tr e_in_t1 oppe_in_t2.
+rewrite/rel_tr/measure_triangulation/flip_tr.
+case: find_triangle_inspect=>-[t|] find_e.
+  move: (iffRL (correction_find_triangle tr e t1) (conj e_in_t1 t1_in_tr)).
+  rewrite find_e=>-[eq1].
+  case: find_triangle_inspect=>-[t'|] find_oppe.
+    move: (iffRL (correction_find_triangle tr (opposite_edge e) t2)
+        (conj oppe_in_t2 t2_in_tr)).
+    rewrite find_oppe=>-[eq2].
+    case: delaunay_inspect=>-[del|ndel].
+      by move: not_del; rewrite -eq1-eq2 del.
+    rewrite/flip_tr_ big_setU1/=.
+      rewrite -(addrNK (triangulation_measure t') (triangulation_measure _)) -addrA
+              -big_setD1/=.
+        rewrite -(addrNK (triangulation_measure t) (_-_))-addrA-big_setD1/=.
+          rewrite big_setU1/=.
+            rewrite-!/(measure_triangulation _).
+Admitted.
+
+Lemma delaunay_decrease :
+  forall (t1 t2 : T) (e : E) (tr : triangulation),
+  delaunay_criterion t1 t2 -> t1 \in (proj1_sig tr) ->
+  separating_edge t1 = Some e ->
+  find_triangle_of_edge (proj1_sig tr) (opposite_edge e) = Some t2 ->
+  relT t2 t1.
+Proof.
+move=>t1 t2 e tr/forallP del t1_in_tr sep find_oppe.
+apply: (@decrease_condition_ (proj1_sig tr) (proj2_sig tr) e t1 t2)=>//.
+move=>i/negP not_point_in.
+by move: (del i)=>/implyP/(_ not_point_in).
+Qed.
 
 End general_walk.
 
