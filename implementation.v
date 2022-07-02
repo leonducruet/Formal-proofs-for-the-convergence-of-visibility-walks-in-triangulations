@@ -738,6 +738,45 @@ case: find_triangle_inspect=>-[t|] find_e.
               !ffunE ?I2_2_is_0=>//.
             rewrite -eq1 -eq2 ndel (triangulation_measure_invariant t i)
               (triangulation_measure_invariant t' j)/triangulation_measure !ffunE/=.
+            rewrite -opprB addrA (addrC (-(_+_))) -opprB -(addrA _ (-(_ - _)))
+              (opprD (_ _ _ (_ (e 1)))) !addrA opprK.
+            rewrite eq1 eq2 t1i t1ip t2j t2jp-(addrA _ (-_))
+              (addrC (-_ (_ (t1 _)) _ _)) addrA -3!addrA (addrC (-_) (-_)) 3!addrA.
+            rewrite -(inv_cycle_measure _ (_ (e 0)))
+                (inv_cycle_measure _ (_ (t2 _))) measure_sub_out_circle
+                  flip_out_circle -t1i -t1ip.
+            rewrite ltr_addr oppr_gt0 lt_def.
+            apply/andP; split.
+              apply/negP; rewrite eq_sym; apply/negP.
+              move: (oriented_triangles t1_in_tr).
+              rewrite (triangle_area_invariant t1 i)=>/lt0r_neq0
+                /(@not_concyclic _ _ _ (t2 (j+1+1)))/contra_not_neq; apply.
+              rewrite !inE=>/orP[/orP[]|]/eqP eq.
+                  move: (@injective_triangles _ _ (j+1+1) (j+1) t2_in_tr).
+                  rewrite eq t1i_t2=>/(_ erefl)/eqP.
+                  by rewrite addrC-subr_eq0-addrA subrr.
+                move: (@injective_triangles _ _ (j+1+1) j t2_in_tr).
+                rewrite eq t1ip_t2=>/(_ erefl)/eqP.
+                by rewrite addrC addrA addrC addrA -subr_eq0 -(addrA (1+1)) subrr.
+              move: (oriented_triangles t2_in_tr).
+              rewrite (triangle_area_invariant t2 j) -t1i_t2 -t1ip_t2 eq
+                -inv_cycle_tr_area flipr_tr_area -triangle_area_invariant oppr_gt0
+                ltNge.
+              by move: (oriented_triangles t1_in_tr)=>/ltW->.
+            rewrite leNgt; apply/negP=>h.
+            move: not_del=>/negP[].
+            apply/forallP=>j0.
+            rewrite -(addrNK j j0) addrC.
+            elim/elimI3: (j0 - j); apply/implyP=>/negP.
+                rewrite addr0=>-[].
+                by apply/existsP; exists (i+1); rewrite t1ip_t2.
+              by case; apply/existsP; exists i; rewrite t1i_t2.
+            rewrite (triangle_dist_invariant _ _ i)/power addrA pmulr_rgt0=>[_|//].
+            rewrite invr_gt0 -triangle_area_invariant.
+            exact: (oriented_triangles t1_in_tr).
+          rewrite eq2; apply/negP=>flip_in_tr.
+          move: (flip_criterion_tr t2_in_tr flip_in_tr .
+Search GRing.mul Order.lt 0.
 Admitted.
 
 Lemma delaunay_decrease :
