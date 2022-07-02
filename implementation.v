@@ -700,6 +700,38 @@ move: (iffRL (correction_find_triangle tr e t) (conj e_in_t t_in_tr)).
 by rewrite find_e.
 Qed.
 
+Lemma flip_not_in_tr (tr : triangulation) (e : E) (t1 t2 : T) :
+  find_triangle_of_edge (proj1_sig tr) e = Some t1 ->
+  find_triangle_of_edge (proj1_sig tr) (opposite_edge e) = Some t2 ->
+  ~~ delaunay_criterion t1 t2 ->
+  flip_t e tr t1 \notin (proj1_sig tr).
+Proof.
+move=>find_e find_oppe/Bool.negb_true_iff not_del.
+move: (find_e) (find_oppe)=>/correction_find_triangle[]/existsP[i]/eqP.
+rewrite ffunE-ffunP=>coords_t1 t1_in_tr/correction_find_triangle[]/existsP[j]/eqP.
+rewrite ffunE-ffunP=>coords_t2 t2_in_tr.
+move: (coords_t1 0) (coords_t1 1) (coords_t2 0) (coords_t2 1).
+rewrite !ffunE/= I2_2_is_0 add0r=>t1i t1ip t2j t2jp.
+move: (t1i) (t1ip).
+rewrite -t2j -t2jp=>t1_t2p t1p_t2.
+set ft := flip_t _ _ _.
+apply/negP=>ft_in_tr.
+move: (@uniq_tr tr t1 ft (i+1) (1+1) t1_in_tr ft_in_tr).
+rewrite/ft/flip_t/flip_t_ find_oppe not_del !ffunE
+        (not_in_edge_invariant t1_in_tr t1i t1ip)=>/=/(_ t1ip)/(_ erefl).
+rewrite -ffunP (@not_in_edge_invariant _ _ (opposite_edge e) j t2_in_tr);
+          first last=>[||/(_ i)].
+    by rewrite ffunE I2_2_is_0.
+  by rewrite ffunE.
+move: coords_t1 t1i t1ip t1_t2p t1p_t2=>_.
+elim/elimI3: i; rewrite ffunE/= ?add0r ?I3_3_is_0.
+    by move=>_ _ _ _/(injective_triangles t1_in_tr).
+  move=>_ _ -> _/(injective_triangles t2_in_tr)/eqP.
+  by rewrite eq_sym addrC -subr_eq0 -addrA subrr.
+by move=> _ <- _ _/(injective_triangles t1_in_tr).
+Qed.
+
+
 Lemma non_delaunay_decrease :
   forall (t1 t2 : T) (tr : triangulation) (e : E),
   ~~ delaunay_criterion t1 t2 -> t1 \in (proj1_sig tr) -> t2 \in (proj1_sig tr) ->
