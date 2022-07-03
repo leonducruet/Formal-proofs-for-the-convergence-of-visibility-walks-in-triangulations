@@ -807,9 +807,44 @@ case: find_triangle_inspect=>-[t|] find_e.
             rewrite invr_gt0 -triangle_area_invariant.
             exact: (oriented_triangles t1_in_tr).
           rewrite eq2; apply/negP=>flip_in_tr.
-          move: (flip_criterion_tr t2_in_tr flip_in_tr .
-Search GRing.mul Order.lt 0.
-Admitted.
+          move: (@flip_not_in_tr _ _ _ t1 find_oppe).
+          rewrite involution_opposite_edge eq2 -{1}eq1=>/(_ find_e).
+          rewrite -(delaunay_eq t1_in_tr t2_in_tr t1i_t2 t1ip_t2)=>/(_ not_del)
+                                  /negP[].
+          exact: flip_in_tr.
+        apply/setU1P; right.
+        by rewrite eq1.
+      apply/setD1P; split.
+        apply/negP=>/eqP.
+        rewrite eq1 eq2=> eq.
+        move: (oriented_triangles t1_in_tr).
+        rewrite (triangle_area_invariant _ i) t1i_t2 t1ip_t2 -eq
+                -(addrNK j (i+1+1)).
+        elim/elimI3: (i+1+1-j).
+            by rewrite add0r -inv_cycle_tr_area dupl_tr_area lt_irreflexive.
+          by rewrite addrC inv_cycle_tr_area dupl_tr_area lt_irreflexive.
+        rewrite (addrC (1+1)) addrA -inv_cycle_tr_area flipr_tr_area oppr_gt0
+                -triangle_area_invariant ltNge.
+        by move: (oriented_triangles t2_in_tr)=>/ltW->.
+      apply/setU1P; right.
+      by rewrite eq2.
+    apply/negP=>/setD1P[flip_not_t']/setD1P[flip_not_t]/setU1P[].
+      rewrite/flip_t_ find_oppe involution_opposite_edge find_e eq1 eq2
+            -(delaunay_eq t1_in_tr t2_in_tr t1i_t2 t1ip_t2) -eq1-eq2 ndel-ffunP
+            =>/(_ (1+1)).
+      rewrite !ffunE/= I2_2_is_0=> eq.
+      move: (@injective_triangles _ _ i (i+1) t1_in_tr).
+      rewrite t1i t1ip eq=>/(_ erefl)/eqP.
+      by rewrite eq_sym addrC -subr_eq0-addrA subrr.
+    move=>flip_in_tr.
+    move: (flip_not_in_tr find_e find_oppe).
+    rewrite eq1 eq2=>/(_ not_del)/negP[].
+    by rewrite/flip_t -eq1.
+  move: (conj oppe_in_t2 t2_in_tr)=>/correction_find_triangle.
+  by rewrite find_oppe.
+move: (conj e_in_t1 t1_in_tr)=>/correction_find_triangle.
+by rewrite find_e.
+Qed.
 
 Lemma delaunay_decrease :
   forall (t1 t2 : T) (e : E) (tr : triangulation),
@@ -822,6 +857,33 @@ move=>t1 t2 e tr/forallP del t1_in_tr sep find_oppe.
 apply: (@decrease_condition_ (proj1_sig tr) (proj2_sig tr) e t1 t2)=>//.
 move=>i/negP not_point_in.
 by move: (del i)=>/implyP/(_ not_point_in).
+Qed.
+
+Definition general_walk := walk2 _ _ _ relT_trans relT_irreflexive _ _ _
+                            separating_edge_in_triangle _ _ rel_tr_trans
+                            rel_tr_irreflexive _ correction_find_triangle _ _ _
+                            correct_flip non_delaunay_decrease delaunay_decrease.
+
+Lemma general_walk_result_edge :
+  forall (e : E) (result_tr : triangulation)
+    (start : {tr_T : triangulation * T | tr_T.2 \in (proj1_sig tr_T.1) }),
+  general_walk start = (result_tr, inr e) ->
+  (exists (t1 : T), edge_in (opposite_edge e) t1) /\
+    (forall (t2 : T), t2 \in (proj1_sig result_tr) -> ~~ edge_in e t2).
+Proof.
+apply: walk2_result_edge.
+exact: involution_opposite_edge.
+Qed.
+
+Notation target_in := (target_in _ _ separating_edge).
+
+Lemma general_walk_result_triangle :
+  forall (start : {tr_T : triangulation * T | tr_T.2 \in (proj1_sig tr_T.1) })
+    (result_tr : triangulation) (t2 : T),
+  general_walk start = (result_tr, inl t2) ->
+  target_in t2.
+Proof.
+apply: walk2_result_triangle.
 Qed.
 
 End general_walk.
