@@ -590,6 +590,13 @@ split=>del.
 exact: (@delaunay_flip t' t tr j i).
 Qed.
 
+(* TODO change the definition of triangulation so that basic results can be
+      established before proving this lemma *)
+
+(* Definition is_tr2 := is_tr && flip_criterion *)
+
+(* Definition trinagulation2 := parameters.triangulation _ is_tr2 *)
+
 Axiom invariant_flip_criterion :
   forall (tr : triangulation) (t1 t2 : T) (e : E),
   t1 \in (proj1_sig tr) ->
