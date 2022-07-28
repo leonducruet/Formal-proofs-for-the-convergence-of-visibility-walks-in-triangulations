@@ -29,6 +29,20 @@ Proof.
 by rewrite/tr_area; expand_det.
 Qed.
 
+Definition middle (A B C : R * R) :=
+  let (Ax, Ay) := A in
+  let (Bx, By) := B in
+  let (Cx, Cy) := C in
+  ((Ax + Bx + Cx)/(1+1+1), (Ay + By + Cy)/(1+1+1)).
+
+Lemma middle_area :
+  forall (A B C : R * R),
+  (tr_area A B C)/(1+1+1) = tr_area A B (middle A B C).
+Proof.
+move=>[Ax Ay] [Bx By] [Cx Cy].
+by rewrite/middle !poly_area/=; field.
+Qed.
+
 Lemma inv_cycle_tr_area (A B C : R * R) :
   tr_area A B C = tr_area C A B.
 Proof.
