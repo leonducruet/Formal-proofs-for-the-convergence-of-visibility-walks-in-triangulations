@@ -329,10 +329,9 @@ Lemma injective_triangles :
   forall (tr : triangulation) (t : T) (i j : 'I_3),
   t \in (proj1_sig tr) -> t i = t j -> i = j.
 Proof.
-move=> tr t i j t_in_tr.
-move: (oriented_triangles t_in_tr).
-rewrite (triangle_area_invariant t i)=> area ti_tj.
-move: area; rewrite ti_tj -(subrK i j).
+move=> tr t i j/oriented_triangles.
+rewrite (triangle_area_invariant t i)=>/[swap] ->.
+rewrite -(subrK i j).
 elim/elimI3 : (j - i); first by rewrite add0r.
   by rewrite addrC dupl_tr_area lt_irreflexive.
 by rewrite addrC addrA flipr_tr_area dupl_tr_area oppr0 lt_irreflexive.
@@ -353,7 +352,7 @@ move: eq1 eq2 h.
 rewrite -(addrNK j i).
 elim/elimI3: (i-j); rewrite ?add0r -?(addrA 1) -?(addrA j 1) ?(addrC j) ?addrA
                               ?I3_3_is_0 ?add0r.
-    by move=>_ _/eqP h/(_ (1+1+j)).
+    by move=>_ _/eqP ?/(_ (1+1+j)).
   move=>h _ _/(_ j).
   rewrite -h=>/(injective_triangles t_in_tr)/eqP.
   by rewrite eq_sym -subr_eq0 -addrA subrr.
